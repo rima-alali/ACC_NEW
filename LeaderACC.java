@@ -27,6 +27,7 @@ public class LeaderACC extends Component {
 	protected static final double ki = 0.000228325;
 	protected static final double kt = 0.01;
 	protected static final double secNanoSecFactor = 1000000000;
+	protected static final int timePeriod = 100;
 
 	
 	public LeaderACC() {
@@ -36,7 +37,7 @@ public class LeaderACC extends Component {
 	
 	
 	@Process
-	@PeriodicScheduling(100)
+	@PeriodicScheduling(timePeriod)
 	public static void speedControl(
 		@In("lPos") Double lPos,
 		@In("lSpeed") Double lSpeed,
@@ -49,12 +50,8 @@ public class LeaderACC extends Component {
 		@InOut("errorWindup") OutWrapper<Double> errorWindup	
 	) {
 	
-		Class<LeaderACC> classObject = LeaderACC.class;
-		Method m = classObject.getMethods()[0];
-		PeriodicScheduling timePeriod =  m.getAnnotation(PeriodicScheduling.class);
-
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
-		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) *  timePeriod.value();
+		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) *  timePeriod;
 		double pid = kp * speedError + integratorSpeedError.value;
 		errorWindup.value = saturate(pid) - pid;
 
