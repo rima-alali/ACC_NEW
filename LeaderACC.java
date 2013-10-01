@@ -19,7 +19,7 @@ public class LeaderACC extends Component {
 	public Double leaderGas = 0.0;
 	public Double leaderBrake = 0.0;
 	
-	 public Double lastSpeedError = 0.0;
+	public Double lastSpeedError = 0.0;
 	public Double integratorSpeedError = 0.0;
 	public Double errorWindup = 0.0;
 	
@@ -50,10 +50,12 @@ public class LeaderACC extends Component {
 		@InOut("errorWindup") OutWrapper<Double> errorWindup	
 	) {
 	
-		double currentTime = System.nanoTime()/secNanoSecFactor;
+		Class<LeaderACC> classObject = LeaderACC.class;
+		Method m = classObject.getMethods()[0];
+		PeriodicScheduling timePeriod =  m.getAnnotation(PeriodicScheduling.class);
 
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
-		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) * timePeriod;
+		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) *  timePeriod.value();
 		double pid = kp * speedError + integratorSpeedError.value;
 		errorWindup.value = saturate(pid) - pid;
 
@@ -65,5 +67,11 @@ public class LeaderACC extends Component {
 			lBrake.value = -pid;
 		}
 	}
-		
+	
+	private static double saturate(double pid) {
+		if(pid > 1) pid = 1;
+		else if(pid < -1) pid = -1;
+		return pid;
+	}
+	
 }
