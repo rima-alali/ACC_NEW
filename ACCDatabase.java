@@ -6,12 +6,6 @@ public class ACCDatabase {
 	protected static final LookupTable fTorques = new LookupTable();
 	protected static final LookupTable lTorques = new LookupTable();
 	protected static final LookupTable routeSlops = new LookupTable();
-	protected static final LookupTable fAcceleration = new LookupTable();
-	protected static final LookupTable lAcceleration = new LookupTable();
-	protected static final LookupTable fAccelerationMin = new LookupTable();
-	protected static final LookupTable lAccelerationMin = new LookupTable();
-	protected static final LookupTable fAccelerationMax = new LookupTable();
-	protected static final LookupTable lAccelerationMax = new LookupTable();
 	protected static final double mass = 1000;
 	protected static final double g = 9.80665;
 
