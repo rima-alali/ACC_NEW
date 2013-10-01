@@ -25,7 +25,6 @@ public class LeaderACC extends Component {
 	
 	protected static final double kp = 0.05;
 	protected static final double ki = 0.000228325;
-	protected static final double kd = 0;
 	protected static final double kt = 0.01;
 	protected static final double secNanoSecFactor = 1000000000;
 	
@@ -46,7 +45,6 @@ public class LeaderACC extends Component {
 		@Out("leaderGas") OutWrapper<Double> lGas,
 		@Out("leaderBrake") OutWrapper<Double> lBrake,
 	
-		@InOut("lastSpeedError") OutWrapper<Double> lastSpeedError,
 		@InOut("integratorSpeedError") OutWrapper<Double> integratorSpeedError,
 		@InOut("es") OutWrapper<Double> es	
 	) {
@@ -56,7 +54,7 @@ public class LeaderACC extends Component {
 
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
 		integratorSpeedError.value += (ki * speedError + kt * es.value) * timePeriod;
-		double pid = timePeriod == 0.0 ? 0.0 : kp * speedError + integratorSpeedError.value + kd * (speedError - lastSpeedError.value)/timePeriod;
+		double pid = timePeriod == 0.0 ? 0.0 : kp * speedError + integratorSpeedError.value;
 		es.value = saturate(pid) - pid;
 		pid = saturate(pid);
 		
