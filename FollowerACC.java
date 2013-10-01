@@ -26,10 +26,8 @@ public Double currentLPos = 60.0;
 public Double currentLSpeed = 0.0;  
 public Double minLPos = 60.0;       
 public Double minLSpeed = 0.0;     
-public Double minLAcc = 0.0;     
 public Double maxLPos = 60.0;       
 public Double maxLSpeed = 0.0;     
-public Double maxLAcc = 0.0;     
 public Double lCreationTime = 0.0;	  
 
 public Double integratorError = 0.0;
@@ -65,10 +63,8 @@ public static void speedControl(
 			
 			@InOut("minLPos") OutWrapper<Double> minLPos,
 			@InOut("minLSpeed") OutWrapper<Double> minLSpeed,
-			@InOut("minLAcc") OutWrapper<Double> minLAcc,
 			@InOut("maxLPos") OutWrapper<Double> maxLPos,
 			@InOut("maxLSpeed") OutWrapper<Double> maxLSpeed,
-			@InOut("maxLAcc") OutWrapper<Double> maxLAcc,
 			@InOut("fLastTime") OutWrapper<Double> fLastTime,
 			@InOut("integratorError") OutWrapper<Double> integratorError,
 			@InOut("es") OutWrapper<Double> es
@@ -88,8 +84,6 @@ public static void speedControl(
 			maxLSpeed.value += boundaries.get("maxLSpeed");
 			System.out.println("////... pos: min "+minLPos.value+" ... max "+maxLPos.value + "     time :"+currentTime);
 			System.out.println("////... speed: min "+minLSpeed.value+" ... max "+maxLSpeed.value);
-			System.out.println("////... acc : min "+minLAcc+" ... max "+maxLAcc);
-		
 		}else { 
 			lTimePeriod = lCreationTime > 0.0 ? currentTime - lCreationTime : 0.0;
 			boundaries = calculateBoundaries(currentLSpeed, currentLSpeed, currentLPos, currentLPos, lTimePeriod);
@@ -99,7 +93,6 @@ public static void speedControl(
 			maxLSpeed.value = currentLSpeed + boundaries.get("maxLSpeed");
 			System.out.println("\\\\... pos: min "+minLPos.value+" ... max "+maxLPos.value+"      time :"+currentTime);
 			System.out.println("\\\\... speed: min "+minLSpeed.value+" ... max "+maxLSpeed.value);
-			System.out.println("\\\\... acc : min "+minLAcc+" ... max "+maxLAcc);
 		}
 		
 			double distanceError = - 50 + (currentLPos - currentFPos);
