@@ -56,8 +56,7 @@ public class LeaderACC extends Component {
 		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) * timePeriod;
 		double pid = kp * speedError + integratorSpeedError.value;
 		errorWindup.value = saturate(pid) - pid;
-		pid = saturate(pid);
-		
+
 		if(pid >= 0){
 			lGas.value = pid;
 			lBrake.value = 0.0;
@@ -67,11 +66,4 @@ public class LeaderACC extends Component {
 		}
 	}
 		
-		
-	private static double saturate(double pid) {
-		if(pid > 1) pid = 1;
-		else if(pid < -1) pid = -1;
-		return pid;
-	}
-
 }
