@@ -64,10 +64,10 @@ public class LeaderACC extends Component {
 		}
 	}
 	
-	private static double saturate(double pid) {
-		if(pid > 1) pid = 1;
-		else if(pid < -1) pid = -1;
-		return pid;
+	private static double saturate(double val) {
+		if(val > 1) val = 1;
+		else if(val < -1) val = -1;
+		return val;
 	}
 	
 }
