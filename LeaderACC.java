@@ -65,7 +65,6 @@ public class LeaderACC extends Component {
 			lGas.value = 0.0;
 			lBrake.value = -pid;
 		}
-		lastSpeedError.value = speedError;
 	}
 		
 		
