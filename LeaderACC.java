@@ -56,8 +56,7 @@ public class LeaderACC extends Component {
 
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
 		integratorSpeedError.value += (ki * speedError + kt * es.value) * timePeriod;
-		double pid = 0.0;
-		pid = timePeriod == 0.0 ? 0.0 : kp * speedError + integratorSpeedError.value + kd * (speedError - lastSpeedError.value)/timePeriod;
+		double pid = timePeriod == 0.0 ? 0.0 : kp * speedError + integratorSpeedError.value + kd * (speedError - lastSpeedError.value)/timePeriod;
 		es.value = saturate(pid) - pid;
 		pid = saturate(pid);
 		
