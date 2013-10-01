@@ -27,8 +27,7 @@ public class LeaderACC extends Component {
 	protected static final double ki = 0.000228325;
 	protected static final double kt = 0.01;
 	protected static final double secNanoSecFactor = 1000000000;
-	protected static final double timePeriod = 100;
-	
+
 	
 	public LeaderACC() {
 		name = "L";
