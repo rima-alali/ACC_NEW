@@ -24,9 +24,6 @@ public class EnvironmentACC extends Component {
 	public Double eLastTime = 0.0;
 	
 	
-	protected static final double fMass = 1000;
-	protected static final double lMass = 1000;
-	protected static final double g = 9.80665;
 	protected static final double secNanoSecFactor = 1000000000;
 	
 	
