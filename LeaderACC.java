@@ -21,12 +21,13 @@ public class LeaderACC extends Component {
 	
 	 public Double lastSpeedError = 0.0;
 	public Double integratorSpeedError = 0.0;
-	public Double es = 0.0;
+	public Double errorWindup = 0.0;
 	
 	protected static final double kp = 0.05;
 	protected static final double ki = 0.000228325;
 	protected static final double kt = 0.01;
 	protected static final double secNanoSecFactor = 1000000000;
+	protected static final double timePeriod = 100;
 	
 	
 	public LeaderACC() {
@@ -46,16 +47,15 @@ public class LeaderACC extends Component {
 		@Out("leaderBrake") OutWrapper<Double> lBrake,
 	
 		@InOut("integratorSpeedError") OutWrapper<Double> integratorSpeedError,
-		@InOut("es") OutWrapper<Double> es	
+		@InOut("errorWindup") OutWrapper<Double> errorWindup	
 	) {
 	
 		double currentTime = System.nanoTime()/secNanoSecFactor;
-		double timePeriod = creationTime > 0.0 ? currentTime - creationTime : 0.0; // this just to not divide by zero in the PID formula
 
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
-		integratorSpeedError.value += (ki * speedError + kt * es.value) * timePeriod;
-		double pid = timePeriod == 0.0 ? 0.0 : kp * speedError + integratorSpeedError.value;
-		es.value = saturate(pid) - pid;
+		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) * timePeriod;
+		double pid = kp * speedError + integratorSpeedError.value;
+		errorWindup.value = saturate(pid) - pid;
 		pid = saturate(pid);
 		
 		if(pid >= 0){
