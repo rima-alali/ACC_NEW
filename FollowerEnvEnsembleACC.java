@@ -17,15 +17,13 @@ public class FollowerEnvEnsembleACC extends Ensemble {
 	public static boolean membership(
 			@In("coord.currentFPos") Double currentFPos,
 			@In("coord.currentFSpeed") Double currentFSpeed,
-			@In("coord.fCreationTime") Double fCreationTime,
 			@In("coord.followerGas") Double followerGas,
 			@In("coord.followerBrake") Double followerBrake,
 		
 			@In("member.eFollowerGas") Double eFollowerGas,
 			@In("member.eFollowerBrake") Double eFollowerBrake,
 			@In("member.eFPos") Double eFPos,
-			@In("member.eFollowerSpeed") Double eFollowerSpeed,
-			@In("member.eLastTime") Double eLastTime
+			@In("member.eFollowerSpeed") Double eFollowerSpeed
 			){
 			return true;
 	}
@@ -35,15 +33,13 @@ public class FollowerEnvEnsembleACC extends Ensemble {
 	public static void map(
 		@Out("coord.currentFPos") OutWrapper<Double> currentFPos,
 		@Out("coord.currentFSpeed") OutWrapper<Double> currentFSpeed,
-		@Out("coord.fCreationTime") OutWrapper<Double> fCreationTime,
 		@In("coord.followerGas") Double followerGas,
 		@In("coord.followerBrake") Double followerBrake,
 	
 		@Out("member.eFollowerGas") OutWrapper<Double> eFollowerGas,
 		@Out("member.eFollowerBrake") OutWrapper<Double> eFollowerBrake,
 		@In("member.eFPos") Double eFPos,
-		@In("member.eFollowerSpeed") Double eFollowerSpeed,
-		@In("member.eLastTime") Double eLastTime
+		@In("member.eFollowerSpeed") Double eFollowerSpeed
 	
 	) {
 	
@@ -51,6 +47,5 @@ public class FollowerEnvEnsembleACC extends Ensemble {
 		eFollowerBrake.value = followerBrake;
 		currentFPos.value = eFPos;
 		currentFSpeed.value = eFollowerSpeed;
-		fCreationTime.value = eLastTime;
 	}
 }

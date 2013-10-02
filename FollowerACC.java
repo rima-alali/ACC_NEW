@@ -39,6 +39,7 @@ protected static final double kt = 0.01;
 protected static final double secNanoSecFactor = 1000000000;
 protected static final int timePeriod = 100;
 
+
 public FollowerACC() {
 	name = "F";
 }
@@ -46,74 +47,77 @@ public FollowerACC() {
 @Process
 @PeriodicScheduling(timePeriod)
 public static void speedControl(
-			@In("currentFPos") Double currentFPos,
-			@In("currentFSpeed") Double currentFSpeed,
-			@In("currentLPos") Double currentLPos,
-			@In("currentLSpeed") Double currentLSpeed,
-			@In("lCreationTime") Double lCreationTime,
-			
-			@Out("followerGas") OutWrapper<Double> followerGas,
-			@Out("followerBrake") OutWrapper<Double> followerBrake,
-			
-			@InOut("lPosMin") OutWrapper<Double> lPosMin,
-			@InOut("lSpeedMin") OutWrapper<Double> lSpeedMin,
-			@InOut("lPosMax") OutWrapper<Double> lPosMax,
-			@InOut("lSpeedMax") OutWrapper<Double> lSpeedMax,
-			@InOut("fLastTime") OutWrapper<Double> fLastTime,
-			@InOut("integratorError") OutWrapper<Double> integratorError,
-			@InOut("errorWindup") OutWrapper<Double> errorWindup
-		) {
+				@In("currentFPos") Double currentFPos,
+				@In("currentFSpeed") Double currentFSpeed,
+				@In("currentLPos") Double currentLPos,
+				@In("currentLSpeed") Double currentLSpeed,
+				@In("lCreationTime") Double lCreationTime,
+				
+				@Out("followerGas") OutWrapper<Double> followerGas,
+				@Out("followerBrake") OutWrapper<Double> followerBrake,
+				
+				@InOut("lPosMin") OutWrapper<Double> lPosMin,
+				@InOut("lSpeedMin") OutWrapper<Double> lSpeedMin,
+				@InOut("lPosMax") OutWrapper<Double> lPosMax,
+				@InOut("lSpeedMax") OutWrapper<Double> lSpeedMax,
+				@InOut("fLastTime") OutWrapper<Double> fLastTime,
+				@InOut("integratorError") OutWrapper<Double> integratorError,
+				@InOut("errorWindup") OutWrapper<Double> errorWindup
+			) {
 	
-		double currentTime = System.nanoTime()/secNanoSecFactor;
-		double lTimePeriod = 0.0;
-		HashMap<String, Double> boundaries = new HashMap<String, Double>();
-
-		if( lCreationTime < fLastTime.value ){
-			lTimePeriod = fLastTime.value > 0.0 ? currentTime - fLastTime.value : 0.0;
-			boundaries = calculateBoundaries(lSpeedMin.value, lSpeedMax.value, lPosMin.value, lPosMax.value, ACCDatabase.lTorques, lTimePeriod);
-			lPosMin.value += boundaries.get("xMin");
-			lPosMax.value += boundaries.get("xMax");
-			lSpeedMin.value += boundaries.get("dxMin");
-			lSpeedMax.value += boundaries.get("dxMax");
-			System.out.println("////... pos: min "+lPosMin.value+" ... max "+lPosMax.value + "     time :"+currentTime);
-			System.out.println("////... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
-		}else { 
-			lTimePeriod = lCreationTime > 0.0 ? currentTime - lCreationTime : 0.0;
-			boundaries = calculateBoundaries(currentLSpeed, currentLSpeed, currentLPos, currentLPos, ACCDatabase.lTorques, lTimePeriod);
-			lPosMin.value = currentLPos + boundaries.get("xMin");
-			lPosMax.value = currentLPos + boundaries.get("xMax");
-			lSpeedMin.value = currentLSpeed + boundaries.get("dxMin");
-			lSpeedMax.value = currentLSpeed + boundaries.get("dxMax");
-			System.out.println("\\\\... pos: min "+lPosMin.value+" ... max "+lPosMax.value+"      time :"+currentTime);
-			System.out.println("\\\\... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
-		}
-		
-		
-			double distanceError = - 50 + (currentLPos - currentFPos);
-			double pidDistance = kpD * distanceError;
-			double error = pidDistance + currentLSpeed - currentFSpeed;
-			integratorError.value += (ki * error + kt * errorWindup.value) * timePeriod;
-			double pidSpeed = kp * error + integratorError.value;
-			errorWindup.value = saturate(pidSpeed) - pidSpeed;
+			double currentTime = System.nanoTime()/secNanoSecFactor;
+			double lTimePeriod = 0.0;
+			HashMap<String, Double> boundaries = new HashMap<String, Double>();
 	
-			if(pidSpeed >= 0){
-				followerGas.value = pidSpeed;
-				followerBrake.value = 0.0;
-			}else{
-				followerGas.value = 0.0;
-				followerBrake.value = -pidSpeed;
+			if( lCreationTime < fLastTime.value ){
+				lTimePeriod = fLastTime.value > 0.0 ? currentTime - fLastTime.value : 0.0;
+				boundaries = calculateBoundaries(lSpeedMin.value, lSpeedMax.value, lPosMin.value, lPosMax.value, ACCDatabase.lTorques, lTimePeriod);
+				lPosMin.value += boundaries.get("xMin");
+				lPosMax.value += boundaries.get("xMax");
+				lSpeedMin.value += boundaries.get("dxMin");
+				lSpeedMax.value += boundaries.get("dxMax");
+				System.out.println("////... pos: min "+lPosMin.value+" ... max "+lPosMax.value + "     time :"+currentTime);
+				System.out.println("////... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
+			}else { 
+				lTimePeriod = lCreationTime > 0.0 ? currentTime - lCreationTime : 0.0;
+				boundaries = calculateBoundaries(currentLSpeed, currentLSpeed, currentLPos, currentLPos, ACCDatabase.lTorques, lTimePeriod);
+				lPosMin.value = currentLPos + boundaries.get("xMin");
+				lPosMax.value = currentLPos + boundaries.get("xMax");
+				lSpeedMin.value = currentLSpeed + boundaries.get("dxMin");
+				lSpeedMax.value = currentLSpeed + boundaries.get("dxMax");
+				System.out.println("\\\\... pos: min "+lPosMin.value+" ... max "+lPosMax.value+"      time :"+currentTime);
+				System.out.println("\\\\... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
 			}
-			
-			fLastTime.value = currentTime;
-			
-			
+		
+		//-------------------------------------------------------safety part----------------------------------------------------------
+			boolean safe = true;
 			if((lPosMin.value - currentFPos) <= 40){
-				System.err.println("brake   -  minLPos :"+lPosMin.value+"  maxPos:"+lPosMax.value+" ,  currentFPos :"+currentFPos+"   creationTime: "+lCreationTime+"   currentTime: "+currentTime+"  flastTime: "+fLastTime.value);
+				System.err.println("brake   -  minLPos :"+lPosMin.value+"  maxPos:"+lPosMax.value+" ,  currentFPos :"+currentFPos
+						+"   creationTime: "+lCreationTime+"   currentTime: "+currentTime+"  flastTime: "+fLastTime.value);
 				followerGas.value = 0.0;
 				followerBrake.value = 1.0;
-				
-				
+				safe = false;
 			}
+	
+			fLastTime.value = currentTime;
+		//----------------------------------------------------- controller part -------------------------------------------------------
+			if(safe){
+				double distanceError = - 50 + (currentLPos - currentFPos);
+				double pidDistance = kpD * distanceError;
+				double error = pidDistance + currentLSpeed - currentFSpeed;
+				integratorError.value += (ki * error + kt * errorWindup.value) * timePeriod;
+				double pidSpeed = kp * error + integratorError.value;
+				errorWindup.value = saturate(pidSpeed) - pidSpeed;
+		
+				if(pidSpeed >= 0){
+					followerGas.value = pidSpeed;
+					followerBrake.value = 0.0;
+				}else{
+					followerGas.value = 0.0;
+					followerBrake.value = -pidSpeed;
+				}
+			}
+			
 	}
 
 

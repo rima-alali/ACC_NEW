@@ -14,8 +14,8 @@ public class LookupTable{
 		}	
 	}
 		
-		//----------------------------------------------------------
-		private ArrayList<Tuple> tuple = new ArrayList<Tuple>();
+	//----------------------------------------------------------
+	private ArrayList<Tuple> tuple = new ArrayList<Tuple>();
 		
 	public void put(double key, double value){
 		tuple.add(new Tuple(key, value));
@@ -27,13 +27,13 @@ public class LookupTable{
 		
 		for (int i = 1; i < tuple.size(); i++) {
 		if( key < tuple.get(i).key){
-		max = tuple.get(i);
-		min = tuple.get(i-1);
-		break;
+			max = tuple.get(i);
+			min = tuple.get(i-1);
+			break;
 		}else if(key == tuple.get(i).key ){
-		max = tuple.get(i);
-		min = tuple.get(i);
-		break;
+			max = tuple.get(i);
+			min = tuple.get(i);
+			break;
 		}
 		}
 		return getFunctionValue( min , max , key );

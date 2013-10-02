@@ -2,6 +2,7 @@ package ACC_NEW;
 
 
 import cz.cuni.mff.d3s.deeco.annotations.In;
+import cz.cuni.mff.d3s.deeco.annotations.Out;
 import cz.cuni.mff.d3s.deeco.annotations.InOut;
 import cz.cuni.mff.d3s.deeco.annotations.PeriodicScheduling;
 import cz.cuni.mff.d3s.deeco.annotations.Process;
@@ -41,28 +42,32 @@ public class EnvironmentACC extends Component {
 			@In("eFollowerGas") Double fGas,
 			@In("eFollowerBrake") Double fBrake,
 			
-			@InOut("eFPos") OutWrapper<Double> eFPos,			//delete In - it is just for the print
+			@InOut("eFPos") OutWrapper<Double> eFPos,			 
 			@InOut("eFollowerSpeed") OutWrapper<Double> fSpeed,
-			@InOut("eLPos") OutWrapper<Double> eLPos,			//delete In - it is just for the print
+			@InOut("eLPos") OutWrapper<Double> eLPos,			 
 			@InOut("eLeaderSpeed") OutWrapper<Double> lSpeed,
 			
 			@InOut("eLastTime") OutWrapper<Double> eLastTime
 			){
 	
 		double currentTime = System.nanoTime()/secNanoSecFactor;
-		double timePeriod = eLastTime.value > 0.0 ? currentTime - eLastTime.value : 0.0;
+		double timePeriod = currentTime - eLastTime.value;
+		
+		
 		// ----------------------- leader ----------------------------------------------------------------------
 		double lAcceleration = ACCDatabase.getAcceleration(lSpeed.value, eLPos.value, ACCDatabase.lTorques, lGas, lBrake);
 		lSpeed.value += lAcceleration * timePeriod;
 		eLPos.value += lSpeed.value * timePeriod;
-		System.out.println("Speed leader : "+lSpeed.value+", pos : "+eLPos.value+"... time :"+currentTime);
 		//------------------------ follower ---------------------------------------------------------------------
 		double fAcceleration = ACCDatabase.getAcceleration(fSpeed.value, eFPos.value, ACCDatabase.fTorques, fGas, fBrake);
 		fSpeed.value += fAcceleration * timePeriod; 
 		eFPos.value += fSpeed.value * timePeriod;
-		System.out.println("Speed follower : "+fSpeed.value+", pos : "+eFPos.value+"... time :"+currentTime);
 		//--------------------------------------------------------------------------------------------------------
-		System.out.println("................... distance : "+(eLPos.value - eFPos.value));
+		
+		
 		eLastTime.value = currentTime;
+		System.out.println("Speed leader : "+lSpeed.value+", pos : "+eLPos.value+"... time :"+currentTime);
+		System.out.println("Speed follower : "+fSpeed.value+", pos : "+eFPos.value+"... time :"+currentTime);
+		System.out.println("................... distance : "+(eLPos.value - eFPos.value));
 	}
 }

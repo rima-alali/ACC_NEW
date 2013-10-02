@@ -14,9 +14,9 @@ public class FollowerLeaderEnsembleACC extends Ensemble {
 
 	@Membership
 	public static boolean membership(
-			@In("coord.currentLPos") Double fCurrentLPos,
-			@In("coord.currentLSpeed") Double fCurrentLSpeed,
-			@In("coord.lCreationTime") Double fLCreationTime,
+			@In("coord.currentLPos") Double currentLPos,
+			@In("coord.currentLSpeed") Double currentLSpeed,
+			@In("coord.lCreationTime") Double lCreationTime,
 	
 			@In("member.lPos") Double lPos,
 			@In("member.lSpeed") Double lSpeed,
