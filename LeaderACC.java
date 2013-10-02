@@ -12,9 +12,9 @@ public class LeaderACC extends Component {
 
 	public String name;
 	
-	public Double lPos = 0.0;          
-	public Double lSpeed = 0.0;        
-	public Double creationTime = 0.0;  
+	public Double lPos = 0.0;
+	public Double lSpeed = 0.0;
+	public Double creationTime = 0.0;
 	
 	public Double leaderGas = 0.0;
 	public Double leaderBrake = 0.0;
@@ -26,9 +26,8 @@ public class LeaderACC extends Component {
 	protected static final double kp = 0.05;
 	protected static final double ki = 0.000228325;
 	protected static final double kt = 0.01;
-	protected static final double secNanoSecFactor = 1000000000;
 	protected static final int timePeriod = 100;
-
+	
 	
 	public LeaderACC() {
 		name = "L";
@@ -39,22 +38,22 @@ public class LeaderACC extends Component {
 	@Process
 	@PeriodicScheduling(timePeriod)
 	public static void speedControl(
-		@In("lPos") Double lPos,
-		@In("lSpeed") Double lSpeed,
-		@In("creationTime") Double creationTime,
-		
-		@Out("leaderGas") OutWrapper<Double> lGas,
-		@Out("leaderBrake") OutWrapper<Double> lBrake,
-	
-		@InOut("integratorSpeedError") OutWrapper<Double> integratorSpeedError,
-		@InOut("errorWindup") OutWrapper<Double> errorWindup	
-	) {
+			@In("lPos") Double lPos,
+			@In("lSpeed") Double lSpeed,
+			@In("creationTime") Double creationTime,
+			
+			@Out("leaderGas") OutWrapper<Double> lGas,
+			@Out("leaderBrake") OutWrapper<Double> lBrake,
+			
+			@InOut("integratorSpeedError") OutWrapper<Double> integratorSpeedError,
+			@InOut("errorWindup") OutWrapper<Double> errorWindup	
+			) {
 	
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
-		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) *  timePeriod;
+		integratorSpeedError.value += (ki * speedError + kt * errorWindup.value) * timePeriod;
 		double pid = kp * speedError + integratorSpeedError.value;
 		errorWindup.value = saturate(pid) - pid;
-
+		
 		if(pid >= 0){
 			lGas.value = pid;
 			lBrake.value = 0.0;
@@ -69,5 +68,6 @@ public class LeaderACC extends Component {
 		else if(val < -1) val = -1;
 		return val;
 	}
-	
+
 }
+

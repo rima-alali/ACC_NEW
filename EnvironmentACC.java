@@ -23,8 +23,9 @@ public class EnvironmentACC extends Component {
 	public Double eLPos = 60.0;
 	public Double eLeaderSpeed = 0.0;
 	public Double eLastTime = 0.0;
+
 	
-	
+	protected static final int timePeriod = 100;
 	protected static final double secNanoSecFactor = 1000000000;
 	
 	
@@ -35,7 +36,7 @@ public class EnvironmentACC extends Component {
 	}	
 	
 	@Process 
-	@PeriodicScheduling(100)
+	@PeriodicScheduling(timePeriod)
 	public static void environmentResponse(
 			@In("eLeaderGas") Double lGas,
 			@In("eLeaderBrake") Double lBrake,
@@ -47,12 +48,10 @@ public class EnvironmentACC extends Component {
 			@InOut("eLPos") OutWrapper<Double> eLPos,			 
 			@InOut("eLeaderSpeed") OutWrapper<Double> lSpeed,
 			
-			@InOut("eLastTime") OutWrapper<Double> eLastTime
+			@Out("eLastTime") OutWrapper<Double> eLastTime
 			){
 	
 		double currentTime = System.nanoTime()/secNanoSecFactor;
-		double timePeriod = currentTime - eLastTime.value;
-		
 		
 		// ----------------------- leader ----------------------------------------------------------------------
 		double lAcceleration = ACCDatabase.getAcceleration(lSpeed.value, eLPos.value, ACCDatabase.lTorques, lGas, lBrake);
