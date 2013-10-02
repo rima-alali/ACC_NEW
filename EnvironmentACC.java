@@ -12,41 +12,38 @@ import cz.cuni.mff.d3s.deeco.knowledge.OutWrapper;
 
 public class EnvironmentACC extends Component {
 
-	public String name = "E";
-	public Double eFollowerGas = 0.0;    
-	public Double eFollowerBrake = 0.0;  
-	public Double eLeaderGas = 0.0;      
-	public Double eLeaderBrake = 0.0;    
+	public String eName = "E";
+	public Double eFGas = 0.0;    
+	public Double eFBrake = 0.0;  
+	public Double eLGas = 0.0;      
+	public Double eLBrake = 0.0;    
 	
 	public Double eFPos = 0.0;
-	public Double eFollowerSpeed = 0.0; 
+	public Double eFSpeed = 0.0; 
 	public Double eLPos = 60.0;
-	public Double eLeaderSpeed = 0.0;
+	public Double eLSpeed = 0.0;
 	public Double eLastTime = 0.0;
 
 	
-	protected static final int timePeriod = 100;
+	protected static final double timePeriod = 100;
 	protected static final double secNanoSecFactor = 1000000000;
 	
 	
 	public EnvironmentACC() {
-		ACCDatabase.followerTorques();
-		ACCDatabase.leaderTorques();
-		ACCDatabase.routeSlops();
 	}	
 	
 	@Process 
-	@PeriodicScheduling(timePeriod)
+	@PeriodicScheduling((int) timePeriod)
 	public static void environmentResponse(
-			@In("eLeaderGas") Double lGas,
-			@In("eLeaderBrake") Double lBrake,
-			@In("eFollowerGas") Double fGas,
-			@In("eFollowerBrake") Double fBrake,
+			@In("eLGas") Double eLGas,
+			@In("eLBrake") Double eLBrake,
+			@In("eFGas") Double eFGas,
+			@In("eFBrake") Double eFBrake,
 			
 			@InOut("eFPos") OutWrapper<Double> eFPos,			 
-			@InOut("eFollowerSpeed") OutWrapper<Double> fSpeed,
+			@InOut("eFSpeed") OutWrapper<Double> eFSpeed,
 			@InOut("eLPos") OutWrapper<Double> eLPos,			 
-			@InOut("eLeaderSpeed") OutWrapper<Double> lSpeed,
+			@InOut("eLSpeed") OutWrapper<Double> eLSpeed,
 			
 			@Out("eLastTime") OutWrapper<Double> eLastTime
 			){
@@ -54,19 +51,19 @@ public class EnvironmentACC extends Component {
 		double currentTime = System.nanoTime()/secNanoSecFactor;
 		
 		// ----------------------- leader ----------------------------------------------------------------------
-		double lAcceleration = ACCDatabase.getAcceleration(lSpeed.value, eLPos.value, ACCDatabase.lTorques, lGas, lBrake);
-		lSpeed.value += lAcceleration * timePeriod;
-		eLPos.value += lSpeed.value * timePeriod;
+		double lAcceleration = ACCDatabase.getAcceleration(eLSpeed.value, eLPos.value, ACCDatabase.lTorques, eLGas, eLBrake);
+		eLSpeed.value += lAcceleration * timePeriod;
+		eLPos.value += eLSpeed.value * timePeriod;
 		//------------------------ follower ---------------------------------------------------------------------
-		double fAcceleration = ACCDatabase.getAcceleration(fSpeed.value, eFPos.value, ACCDatabase.fTorques, fGas, fBrake);
-		fSpeed.value += fAcceleration * timePeriod; 
-		eFPos.value += fSpeed.value * timePeriod;
+		double fAcceleration = ACCDatabase.getAcceleration(eFSpeed.value, eFPos.value, ACCDatabase.fTorques, eFGas, eFBrake);
+		eFSpeed.value += fAcceleration * timePeriod; 
+		eFPos.value += eFSpeed.value * timePeriod;
 		//--------------------------------------------------------------------------------------------------------
 		
 		
 		eLastTime.value = currentTime;
-		System.out.println("Speed leader : "+lSpeed.value+", pos : "+eLPos.value+"... time :"+currentTime);
-		System.out.println("Speed follower : "+fSpeed.value+", pos : "+eFPos.value+"... time :"+currentTime);
+		System.out.println("Speed leader : "+eLSpeed.value+", pos : "+eLPos.value+"... time :"+currentTime);
+		System.out.println("Speed follower : "+eFSpeed.value+", pos : "+eFPos.value+"... time :"+currentTime);
 		System.out.println("................... distance : "+(eLPos.value - eFPos.value));
 	}
 }

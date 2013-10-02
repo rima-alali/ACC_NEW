@@ -14,13 +14,13 @@ public class FollowerLeaderEnsembleACC extends Ensemble {
 
 	@Membership
 	public static boolean membership(
-			@In("coord.currentLPos") Double currentLPos,
-			@In("coord.currentLSpeed") Double currentLSpeed,
-			@In("coord.lCreationTime") Double lCreationTime,
+			@In("coord.fLPos") Double fLPos,
+			@In("coord.fLSpeed") Double fLSpeed,
+			@In("coord.fLCreationTime") Double fLCreationTime,
 	
 			@In("member.lPos") Double lPos,
 			@In("member.lSpeed") Double lSpeed,
-			@In("member.creationTime") Double creationTime
+			@In("member.lCreationTime") Double lCreationTime
 		){
 		return true;
 	}
@@ -28,18 +28,18 @@ public class FollowerLeaderEnsembleACC extends Ensemble {
 	@KnowledgeExchange
 	@PeriodicScheduling(50)
 	public static void map(
-			@Out("coord.currentLPos") OutWrapper<Double> fCurrentLPos,
-			@Out("coord.currentLSpeed") OutWrapper<Double> fCurrentLSpeed,
-			@Out("coord.lCreationTime") OutWrapper<Double> fLCreationTime,
+			@Out("coord.fLPos") OutWrapper<Double> fLPos,
+			@Out("coord.fLSpeed") OutWrapper<Double> fLSpeed,
+			@Out("coord.fLCreationTime") OutWrapper<Double> fLCreationTime,
 	
 			@In("member.lPos") Double lPos,
 			@In("member.lSpeed") Double lSpeed,
-			@In("member.creationTime") Double creationTime
+			@In("member.lCreationTime") Double lCreationTime
 	) {
 	
-	fCurrentLPos.value = lPos;
-	fCurrentLSpeed.value = lSpeed;
-	fLCreationTime.value = creationTime;
+	fLPos.value = lPos;
+	fLSpeed.value = lSpeed;
+	fLCreationTime.value = lCreationTime;
 		
 	}
 

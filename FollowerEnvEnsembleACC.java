@@ -15,37 +15,36 @@ public class FollowerEnvEnsembleACC extends Ensemble {
 
 	@Membership
 	public static boolean membership(
-			@In("coord.currentFPos") Double currentFPos,
-			@In("coord.currentFSpeed") Double currentFSpeed,
-			@In("coord.followerGas") Double followerGas,
-			@In("coord.followerBrake") Double followerBrake,
+			@In("coord.fPos") Double fPos,
+			@In("coord.fSpeed") Double fSpeed,
+			@In("coord.fGas") Double fGas,
+			@In("coord.fBrake") Double fBrake,
 		
-			@In("member.eFollowerGas") Double eFollowerGas,
-			@In("member.eFollowerBrake") Double eFollowerBrake,
+			@In("member.eFGas") Double eFGas,
+			@In("member.eFBrake") Double eFBrake,
 			@In("member.eFPos") Double eFPos,
-			@In("member.eFollowerSpeed") Double eFollowerSpeed
-			){
+			@In("member.eFSpeed") Double eFSpeed
+		){
 			return true;
 	}
 	
 	@KnowledgeExchange
 	@PeriodicScheduling(50)
 	public static void map(
-		@Out("coord.currentFPos") OutWrapper<Double> currentFPos,
-		@Out("coord.currentFSpeed") OutWrapper<Double> currentFSpeed,
-		@In("coord.followerGas") Double followerGas,
-		@In("coord.followerBrake") Double followerBrake,
-	
-		@Out("member.eFollowerGas") OutWrapper<Double> eFollowerGas,
-		@Out("member.eFollowerBrake") OutWrapper<Double> eFollowerBrake,
-		@In("member.eFPos") Double eFPos,
-		@In("member.eFollowerSpeed") Double eFollowerSpeed
-	
+			@Out("coord.fPos")  OutWrapper<Double> fPos,
+			@Out("coord.fSpeed")  OutWrapper<Double> fSpeed,
+			@In("coord.fGas") Double fGas,
+			@In("coord.fBrake") Double fBrake,
+		
+			@Out("member.eFGas")  OutWrapper<Double> eFGas,
+			@Out("member.eFBrake")  OutWrapper<Double> eFBrake,
+			@In("member.eFPos") Double eFPos,
+			@In("member.eFSpeed") Double eFSpeed
 	) {
 	
-		eFollowerGas.value = followerGas;
-		eFollowerBrake.value = followerBrake;
-		currentFPos.value = eFPos;
-		currentFSpeed.value = eFollowerSpeed;
+		eFGas.value = fGas;
+		eFBrake.value = fBrake;
+		fPos.value = eFPos;
+		fSpeed.value = eFSpeed;
 	}
 }

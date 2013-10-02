@@ -9,8 +9,7 @@ public class ACCDatabase {
 	protected static final double mass = 1000;
 	protected static final double g = 9.80665;
 
-	
-	public static void driverBehaviour(){
+	public static void initializer(){
 		driverSpeed.put(0.0, 90);
 		driverSpeed.put(1000.0, 90);
 		driverSpeed.put(2000.0, 90);
@@ -22,10 +21,7 @@ public class ACCDatabase {
 		driverSpeed.put(8000.0, 90);
 		driverSpeed.put(9000.0, 90);
 		driverSpeed.put(10000.0, 90);
-		
-	}
-	
-	public static void leaderTorques(){
+
 		lTorques.put(0.0, 165.0);
 		lTorques.put(8.0, 180.0);
 		lTorques.put(20.0, 180.0);
@@ -40,9 +36,7 @@ public class ACCDatabase {
 		lTorques.put(180.0, 50.0);
 		lTorques.put(200.0, 40.0);
 		lTorques.put(100000.0, 1.0);
-	}
 
-	public static void followerTorques(){	
 		fTorques.put(0.0, 165.0);
 		fTorques.put(8.0, 180.0);
 		fTorques.put(20.0, 180.0);
@@ -57,9 +51,7 @@ public class ACCDatabase {
 		fTorques.put(180.0, 50.0);
 		fTorques.put(200.0, 40.0);
 		fTorques.put(100000.0, 1.0);
-	}
-	
-	public static void routeSlops(){
+		
 		routeSlops.put(0.0, 0.0);
 		routeSlops.put(1000.0, 0.0);
 		routeSlops.put(2000.0, Math.PI/60);
@@ -78,13 +70,15 @@ public class ACCDatabase {
 		routeSlops.put(15000.0, 0.0);
 		routeSlops.put(100000.0, 0.0);
 	}
-
+	
 	public static Double getAcceleration(Double speed, Double pos, LookupTable torques,Double gas, Double brake){
 		double FEng = gas * torques.get(speed) / 0.005;
+		System.err.println(FEng+" = "+gas+" * "+torques.get(speed)+" / 0.005;");
 		double FResistance = brake * 10000;
 		double FEngResistance = 0.0005 * speed;
 		double FHill = Math.sin(ACCDatabase.routeSlops.get(pos)) * g * mass;
 		double FFinal = FEng - FResistance - FEngResistance - FHill;
+//		System.err.println(speed + "... " +FFinal+" = "+FEng+" - "+FResistance+" - "+FEngResistance+" - "+FHill);
 		double Acceleration = FFinal / mass;
 		return Acceleration;
 	}
