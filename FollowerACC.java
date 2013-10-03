@@ -36,6 +36,7 @@ public class FollowerACC extends Component {
 	protected static final double kt = 0.01;
 	protected static final double secNanoSecFactor = 1000000000;
 	protected static final double timePeriod = 100;
+	protected static final double miliSecondToSecond = 1000;
 	protected static final double minLimit = 40;
 	
 	
@@ -65,49 +66,38 @@ public class FollowerACC extends Component {
 				) {
 	
 			double currentTime = System.nanoTime()/secNanoSecFactor;
-			double lTimePeriod = 0.0;
+			double fLTimePeriod = 0.0;
+			double timePeriodInSeconds = timePeriod/miliSecondToSecond;
 			vehicleBeliefBoundaries boundaries = null;
-	
-			if( fLCreationTime < fLastTime.value ){
-				lTimePeriod = fLastTime.value > 0.0 ? currentTime - fLastTime.value : 0.0;
-				boundaries = calculateBoundaries(fLSpeedMin.value, fLSpeedMax.value, fLPosMin.value, fLPosMax.value, ACCDatabase.lTorques, lTimePeriod);
-				fLPosMin.value += boundaries.posMin;
-				fLPosMax.value += boundaries.posMax;
-				fLSpeedMin.value += boundaries.speedMin;
-				fLSpeedMax.value += boundaries.speedMax;
-				System.out.println("////... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value + "     time :"+currentTime);
-				System.out.println("////... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
-			}else { 
-				lTimePeriod = fLCreationTime > 0.0 ? currentTime - fLCreationTime : 0.0;
-				boundaries = calculateBoundaries(fLSpeed, fLSpeed, fLPos, fLPos, ACCDatabase.lTorques, lTimePeriod);
-				fLPosMin.value = fLPos + boundaries.posMin;
-				fLPosMax.value = fLPos + boundaries.posMax;
-				fLSpeedMin.value = fLSpeed + boundaries.speedMin;
-				fLSpeedMax.value = fLSpeed + boundaries.speedMax;
-				System.out.println("\\\\... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
-				System.out.println("\\\\... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+			
+			//------------------------------------------------ knowledge evaluation ------------------------------------------
+				
+			fLPosMin.value = fLPos;
+			fLPosMax.value = fLPos;
+			fLSpeedMin.value = fLSpeed;
+			fLSpeedMax.value = fLSpeed;
+
+			fLTimePeriod = timePeriodInSeconds + (currentTime - fLCreationTime)/miliSecondToSecond;
+				for (int i = 0; i < fLTimePeriod; i++) {
+					boundaries = vehilceKnowledgeEvolutionModel(fLSpeedMin.value, fLSpeedMax.value, fLPosMin.value, fLPosMax.value, ACCDatabase.lTorques);
+					fLPosMin.value += boundaries.posMin * i;
+					fLPosMax.value += boundaries.posMax * i;
+					fLSpeedMin.value += boundaries.speedMin * i;
+					fLSpeedMax.value += boundaries.speedMax * i;
 			}
-		
+			
+			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
+			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+			
 //		//-------------------------------------------------------safety part----------------------------------------------------------
-//			boolean safe = true;
-//			if((lPosMin.value - currentFPos) <= minLimit){
-//				System.err.println("brake   -  minLPos :"+lPosMin.value+"  maxPos:"+lPosMax.value+" ,  currentFPos :"+currentFPos
-//						+"   creationTime: "+lCreationTime+"   currentTime: "+currentTime+"  flastTime: "+fLastTime.value);
-//				followerGas.value = 0.0;
-//				followerBrake.value = 1.0;
-//				safe = false;
-//			}
-//	
-//			fLastTime.value = currentTime;
 //		//----------------------------------------------------- controller part -------------------------------------------------------
-//			if(safe){
 				double distanceError = - 50 + (fLPos - fPos);
 				double pidDistance = kpD * distanceError;
 				double error = pidDistance + fLSpeed - fSpeed;
-				fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriod;
+				fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriodInSeconds;
 				double pidSpeed = kp * error + fIntegratorError.value;
 				fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
-				
+
 				if(pidSpeed >= 0){
 					fGas.value = pidSpeed;
 					fBrake.value = 0.0;
@@ -115,8 +105,6 @@ public class FollowerACC extends Component {
 					fGas.value = 0.0;
 					fBrake.value = -pidSpeed;
 				}
-//			}
-			
 	}
 
 
@@ -126,18 +114,14 @@ public class FollowerACC extends Component {
 		return val;
 	}
 	
-	private static vehicleBeliefBoundaries calculateBoundaries( Double speedMin, Double speedMax, Double posMin, Double posMax, LookupTable torques, Double dt){
+	private static vehicleBeliefBoundaries vehilceKnowledgeEvolutionModel( Double speedMin, Double speedMax, Double posMin, Double posMax, LookupTable torques){
 			double accMin = ACCDatabase.getAcceleration(speedMin, posMin, torques, 0.0, 1.0);
 			double accMax = ACCDatabase.getAcceleration(speedMax, posMax, torques, 1.0, 0.0);
-			speedMin = accMin * dt;
-			speedMax = accMax * dt;
-			posMin = speedMin * dt;
-			posMax = speedMax * dt;
 			vehicleBeliefBoundaries vB=new vehicleBeliefBoundaries();
-			vB.posMin = posMin;
-			vB.posMax = posMax;
-			vB.speedMin = speedMin;
-			vB.speedMax = speedMax;
+			vB.posMin = speedMin;
+			vB.posMax = speedMax;
+			vB.speedMin = accMin;
+			vB.speedMax = accMax;
 			return vB;
 	}
 	

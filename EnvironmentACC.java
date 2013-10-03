@@ -27,6 +27,7 @@ public class EnvironmentACC extends Component {
 	
 	protected static final double timePeriod = 100;
 	protected static final double secNanoSecFactor = 1000000000;
+	protected static final double miliSecondToSecond = 1000;
 	
 	
 	public EnvironmentACC() {
@@ -49,17 +50,17 @@ public class EnvironmentACC extends Component {
 			){
 	
 		double currentTime = System.nanoTime()/secNanoSecFactor;
+		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
 		
 		// ----------------------- leader ----------------------------------------------------------------------
 		double lAcceleration = ACCDatabase.getAcceleration(eLSpeed.value, eLPos.value, ACCDatabase.lTorques, eLGas, eLBrake);
-		eLSpeed.value += lAcceleration * timePeriod;
-		eLPos.value += eLSpeed.value * timePeriod;
-		//------------------------ follower ---------------------------------------------------------------------
+		eLSpeed.value += lAcceleration * timePeriodInSeconds;
+		eLPos.value += eLSpeed.value * timePeriodInSeconds;
+ 		//------------------------ follower ---------------------------------------------------------------------
 		double fAcceleration = ACCDatabase.getAcceleration(eFSpeed.value, eFPos.value, ACCDatabase.fTorques, eFGas, eFBrake);
-		eFSpeed.value += fAcceleration * timePeriod; 
-		eFPos.value += eFSpeed.value * timePeriod;
-		//--------------------------------------------------------------------------------------------------------
-		
+		eFSpeed.value += fAcceleration * timePeriodInSeconds; 
+		eFPos.value += eFSpeed.value * timePeriodInSeconds;
+ 		//--------------------------------------------------------------------------------------------------------
 		
 		eLastTime.value = currentTime;
 		System.out.println("Speed leader : "+eLSpeed.value+", pos : "+eLPos.value+"... time :"+currentTime);

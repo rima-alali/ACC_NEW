@@ -29,7 +29,6 @@ public class Execute {
 		
 		KnowledgeManager km = new RepositoryKnowledgeManager(new LocalKnowledgeRepository());
 		Scheduler scheduler = new MultithreadedScheduler();
-		ACCDatabase.initializer();
 		
 		Runtime rt = new Runtime(km, scheduler);
 		System.out.println("comp "+ components.size() + " , ensembles : "+ ensembles.size());

@@ -26,6 +26,7 @@ public class LeaderACC extends Component {
 	protected static final double ki = 0.000228325;
 	protected static final double kt = 0.01;
 	protected static final double timePeriod = 100;
+	protected static final double miliSecondToSecond = 1000;
 	
 	
 	public LeaderACC() {
@@ -46,11 +47,12 @@ public class LeaderACC extends Component {
 			@InOut("lErrorWindup") OutWrapper<Double> lErrorWindup	
 			) {
 	
+		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
 		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
-		lIntegratorSpeedError.value += (ki * speedError + kt * lErrorWindup.value) * timePeriod;
+		lIntegratorSpeedError.value += (ki * speedError + kt * lErrorWindup.value) * timePeriodInSeconds;
 		double pid = kp * speedError + lIntegratorSpeedError.value;
 		lErrorWindup.value = saturate(pid) - pid;
-		
+
 		if(pid >= 0){
 			lGas.value = pid;
 			lBrake.value = 0.0;

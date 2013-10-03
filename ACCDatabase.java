@@ -9,7 +9,7 @@ public class ACCDatabase {
 	protected static final double mass = 1000;
 	protected static final double g = 9.80665;
 
-	public static void initializer(){
+	static{
 		driverSpeed.put(0.0, 90);
 		driverSpeed.put(1000.0, 90);
 		driverSpeed.put(2000.0, 90);
@@ -73,12 +73,10 @@ public class ACCDatabase {
 	
 	public static Double getAcceleration(Double speed, Double pos, LookupTable torques,Double gas, Double brake){
 		double FEng = gas * torques.get(speed) / 0.005;
-		System.err.println(FEng+" = "+gas+" * "+torques.get(speed)+" / 0.005;");
 		double FResistance = brake * 10000;
 		double FEngResistance = 0.0005 * speed;
 		double FHill = Math.sin(ACCDatabase.routeSlops.get(pos)) * g * mass;
 		double FFinal = FEng - FResistance - FEngResistance - FHill;
-//		System.err.println(speed + "... " +FFinal+" = "+FEng+" - "+FResistance+" - "+FEngResistance+" - "+FHill);
 		double Acceleration = FFinal / mass;
 		return Acceleration;
 	}
