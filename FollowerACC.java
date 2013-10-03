@@ -77,7 +77,7 @@ public class FollowerACC extends Component {
 			fLSpeedMin.value = fLSpeed;
 			fLSpeedMax.value = fLSpeed;
 
-			fLTimePeriod = (currentTime - fLCreationTime);
+			fLTimePeriod = timePeriod + (currentTime - fLCreationTime);
 			System.out.println("f time period :"+fLTimePeriod);
 			for (int i = 0; i < fLTimePeriod; i++) {
 					boundaries = vehilceKnowledgeEvolutionModel(fLSpeedMin.value, fLSpeedMax.value, fLPosMin.value, fLPosMax.value, ACCDatabase.lTorques);
