@@ -1,4 +1,4 @@
-package ACC_NEW;
+package ACC;
 
 import cz.cuni.mff.d3s.deeco.annotations.In;
 import cz.cuni.mff.d3s.deeco.annotations.Out;
@@ -8,7 +8,7 @@ import cz.cuni.mff.d3s.deeco.annotations.Process;
 import cz.cuni.mff.d3s.deeco.knowledge.Component;
 import cz.cuni.mff.d3s.deeco.knowledge.OutWrapper;
 
-public class LeaderACC extends Component {
+public class Leader extends Component {
 
 	public String lName;
 	
@@ -29,7 +29,7 @@ public class LeaderACC extends Component {
 	protected static final double miliSecondToSecond = 1000;
 	
 	
-	public LeaderACC() {
+	public Leader() {
 		lName = "L";
 	}
 	
@@ -48,7 +48,7 @@ public class LeaderACC extends Component {
 			) {
 	
 		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
-		double speedError = ACCDatabase.driverSpeed.get(lPos) - lSpeed;
+		double speedError = ACCDatabase.getValue(ACCDatabase.positionSeries, ACCDatabase.driverSpeed, lPos) - lSpeed;
 		lIntegratorSpeedError.value += (ki * speedError + kt * lErrorWindup.value) * timePeriodInSeconds;
 		double pid = kp * speedError + lIntegratorSpeedError.value;
 		lErrorWindup.value = saturate(pid) - pid;

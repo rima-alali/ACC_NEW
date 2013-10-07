@@ -1,4 +1,4 @@
-package ACC_NEW;
+package ACC;
 
 
 import cz.cuni.mff.d3s.deeco.annotations.In;
@@ -10,7 +10,7 @@ import cz.cuni.mff.d3s.deeco.knowledge.Component;
 import cz.cuni.mff.d3s.deeco.knowledge.OutWrapper;
 
 
-public class EnvironmentACC extends Component {
+public class Environment extends Component {
 
 	public String eName = "E";
 	public Double eFGas = 0.0;    
@@ -30,7 +30,8 @@ public class EnvironmentACC extends Component {
 	protected static final double miliSecondToSecond = 1000;
 	
 	
-	public EnvironmentACC() {
+	
+	public Environment() {
 	}	
 	
 	@Process 
@@ -53,11 +54,11 @@ public class EnvironmentACC extends Component {
 		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
 		
 		// ----------------------- leader ----------------------------------------------------------------------
-		double lAcceleration = ACCDatabase.getAcceleration(eLSpeed.value, eLPos.value, ACCDatabase.lTorques, eLGas, eLBrake);
+		double lAcceleration = ACCDatabase.getAcceleration(eLSpeed.value, eLPos.value, ACCDatabase.lTorques, eLGas, eLBrake, ACCDatabase.lMass);
 		eLSpeed.value += lAcceleration * timePeriodInSeconds;
 		eLPos.value += eLSpeed.value * timePeriodInSeconds;
  		//------------------------ follower ---------------------------------------------------------------------
-		double fAcceleration = ACCDatabase.getAcceleration(eFSpeed.value, eFPos.value, ACCDatabase.fTorques, eFGas, eFBrake);
+		double fAcceleration = ACCDatabase.getAcceleration(eFSpeed.value, eFPos.value, ACCDatabase.fTorques, eFGas, eFBrake,ACCDatabase.fMass);
 		eFSpeed.value += fAcceleration * timePeriodInSeconds; 
 		eFPos.value += eFSpeed.value * timePeriodInSeconds;
  		//--------------------------------------------------------------------------------------------------------

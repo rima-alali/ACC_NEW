@@ -1,4 +1,4 @@
-package ACC_NEW;
+package ACC;
 
 import cz.cuni.mff.d3s.deeco.annotations.KnowledgeExchange;
 import cz.cuni.mff.d3s.deeco.annotations.Membership;
@@ -17,12 +17,15 @@ public class FollowerLeaderEnsembleACC extends Ensemble {
 			@In("coord.fLPos") Double fLPos,
 			@In("coord.fLSpeed") Double fLSpeed,
 			@In("coord.fLCreationTime") Double fLCreationTime,
+			@In("coord.fHeadwayDistance") Double fHeadwayDistance,
 	
 			@In("member.lPos") Double lPos,
 			@In("member.lSpeed") Double lSpeed,
 			@In("member.lCreationTime") Double lCreationTime
 		){
-		return true;
+//		if( (fLPos - lPos) <= 2*fHeadwayDistance )
+			return true;
+//		return false;
 	}
 	
 	@KnowledgeExchange

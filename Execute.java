@@ -1,4 +1,4 @@
-package ACC_NEW;
+package ACC;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,9 +16,9 @@ public class Execute {
 
 	public static void main(String[] args) {
 		List<Class<?>> components = Arrays.asList(new Class<?>[] {
-		LeaderACC.class,
-		FollowerACC.class,
-		EnvironmentACC.class
+		Leader.class,
+		Follower.class,
+		Environment.class
 		});
 		
 		List<Class<?>> ensembles = Arrays.asList(new Class<?>[] {
