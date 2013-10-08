@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
-import org.apache.commons.math3.ode.FirstOrderConverterTest;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.nonstiff.MidpointIntegrator;
@@ -88,46 +87,48 @@ public class Follower extends Component {
 			double[] maxBoundaries = new double[2];
 			double[] minBoundariesEst = new double[2];
 			double[] maxBoundariesEst = new double[2];
+			double startTime = 0.0;
 			
 			
+			if( fLCreationTime <= fLastTime.value  ){
+				startTime = fLastTime.value;
+			}else{
+				startTime = fLCreationTime;
+				fLPosMin.value = fLPos;
+				fLPosMax.value = fLPos;
+				fLSpeedMin.value = fLSpeed;
+				fLSpeedMax.value = fLSpeed;
+			}
+			System.out.println("creation : "+fLCreationTime+" , flast "+fLastTime.value+" ,  starttime : "+startTime);
+
 			
 			
 			//------------------------------------------------ knowledge evaluation ------------------------------------------
-			fLPosMin.value = fLPos;
-			fLPosMax.value = fLPos;
-			fLSpeedMin.value = fLSpeed;
-			fLSpeedMax.value = fLSpeed;
 			double accMin = ACCDatabase.getAcceleration(fLSpeedMin.value, fLPosMin.value, ACCDatabase.lTorques, 0.0, 1.0, ACCDatabase.lMass);
 			double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
-
 			
-			FirstOrderIntegrator integrator = new MidpointIntegrator(timePeriod);
+			FirstOrderIntegrator integrator = new MidpointIntegrator(timePeriodInSeconds);
 			//------------- min ----------------------
+			
 			minBoundaries[0] = fLSpeedMin.value;
 			minBoundaries[1] = accMin;
 			FirstOrderDifferentialEquations minF = new Derivation();
-			minF.computeDerivatives(currentTime, minBoundaries, minBoundariesEst);
-			integrator.integrate(minF, 
-					fLCreationTime.doubleValue(), 
-					minBoundaries, 
-					currentTime, 
-					minBoundariesEst);
+			integrator.integrate(minF, startTime/miliSecondToSecond, minBoundaries, currentTime/miliSecondToSecond, minBoundariesEst);
 			fLPosMin.value = minBoundariesEst[0];
 			fLSpeedMin.value = minBoundariesEst[1];
 			//------------- max ----------------------
+			
 			maxBoundaries[0] = fLSpeedMax.value;
 			maxBoundaries[1] = accMax;
 			FirstOrderDifferentialEquations maxF = new Derivation();
-			maxF.computeDerivatives(currentTime, maxBoundaries, maxBoundariesEst);
-			integrator.integrate(maxF, fLCreationTime.doubleValue(), maxBoundaries, currentTime, maxBoundariesEst);
+			integrator.integrate(maxF, startTime/miliSecondToSecond, maxBoundaries, currentTime/miliSecondToSecond, maxBoundariesEst);
 			fLPosMax.value = maxBoundariesEst[0];
 			fLSpeedMax.value = maxBoundariesEst[1];
 			
 			
-			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
-			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+maxBoundariesEst[0]+"      time :"+currentTime);
+			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+maxBoundariesEst[1]);
 			
-
 			//-------------------------------------------------------safety part----------------------------------------------------------
 			
 			
@@ -149,9 +150,11 @@ public class Follower extends Component {
 					fGas.value = 0.0;
 					fBrake.value = -pidSpeed;
 				}
+
+				fLastTime.value = currentTime;
 	}
-
-
+	
+	
 	private static double saturate(double val) {
 		if(val > 1) val = 1;
 		else if(val < -1) val = -1;
@@ -161,7 +164,7 @@ public class Follower extends Component {
 
 	@Process
 	@PeriodicScheduling((int) timePeriod)
-	public static boolean computeAccelerationCACC(
+	public static void computeAccelerationCACC(
 			@In("fPos") Double fPos,
 			@In("fLPos") Double fLPos,
 			@In("fHeadwayDistance") @TriggerOnChange Double fHeadwayDistance, // it should not depend on that, because it may be will be out range of radar????? why I would put this field
@@ -170,15 +173,13 @@ public class Follower extends Component {
 		
 		if ( inaccuracy(distance(fLPos, fPos)) <= THRESHOLD){
 		
-			return true;
 		}
-		return false;
 	}
 	
 	
 	@Process
 	@PeriodicScheduling((int) timePeriod)
-	public static boolean computeAccelerationACC(
+	public static void computeAccelerationACC(
 			@In("fPos") Double fPos,
 			@In("fLPos") Double fLPos,
 			@In("fHeadwayDistance") @TriggerOnChange Double fHeadwayDistance, // the same .....
@@ -186,14 +187,11 @@ public class Follower extends Component {
 	){
 		if ( inaccuracy(distance(fLPos, fPos)) > THRESHOLD){
 		
-			return true;
 		}
-		return false;
 	}
 
-
 	private static double inaccuracy(double distance){
-				
+		
 		return 0;
 			
 	}
@@ -214,14 +212,13 @@ public class Follower extends Component {
 		public void computeDerivatives(double t, double[] y, double[] yDot)
 				throws MaxCountExceededException, DimensionMismatchException {
 			// TODO Auto-generated method stub
-			int params = 1;
+			int params = 2;
 			int order = 1;
 			DerivativeStructure time = new DerivativeStructure(params, order, 0, t);
 			for (int i = 0; i < yDot.length; i++) {
-				DerivativeStructure state = new DerivativeStructure(params, order, 0, y[i]);
-				yDot[i] = state.getPartialDerivative(1);
-				System.out.println("state        = " + state.getValue());
-				System.out.println("d state/dx    = " + state.getPartialDerivative(1));
+				DerivativeStructure state = new DerivativeStructure(params, order, 1, y[i]);
+				DerivativeStructure f = state.divide(time);
+				yDot[i] = f.getValue();
 			}
 
 		}
