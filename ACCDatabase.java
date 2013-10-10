@@ -112,7 +112,7 @@ public class ACCDatabase {
 	public static Double getValue(ArrayList<Double> x, ArrayList<Double> y, Double key){
 		double a[] = ArrayUtils.toPrimitive(x.toArray(new Double[x.size()]));
 		double b[] = ArrayUtils.toPrimitive(y.toArray(new Double[y.size()]));
-		UnivariateInterpolator interpolator = new LinearInterpolator();//Spline interpolation
+		UnivariateInterpolator interpolator = new LinearInterpolator();//Spline interpolation more accurate
 		UnivariateFunction function = interpolator.interpolate(a,b);
 		if(key < 0.0) return 0.0;
 		double value = function.value(key);

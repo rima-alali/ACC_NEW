@@ -1,9 +1,6 @@
 package ACC;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
@@ -37,10 +34,11 @@ public class Follower extends Component {
 	public Double fLPosMax = 0.0;       
 	public Double fLSpeedMax = 0.0;     
 	public Double fLCreationTime = 0.0;	  
-	
-	public Double fDistance = 0.0;
-	public Double fHeadwayDistance = 0.0;
-	public Double fTargetAcc = 0.0;
+	public Double fLTargetPos = 0.0;       
+	public Double fLTargetSpeed = 0.0;  
+
+	public Double fInaccuracy = 0.0;
+	public Double fHeadwayDistance = 100.0;
 	public Double fIntegratorError = 0.0;
 	public Double fErrorWindup = 0.0;
 	
@@ -64,178 +62,157 @@ public class Follower extends Component {
 	@Process
 	@PeriodicScheduling((int) timePeriod)
 	public static void speedControl(
-					@In("fPos") Double fPos,
-					@In("fSpeed") Double fSpeed,
-					@In("fLPos") Double fLPos,
-					@In("fLSpeed") Double fLSpeed,
-					@In("fLCreationTime") Double fLCreationTime,
-					@In("fHeadwayDistance") Double fHeadwayDistance,
-					
-					@Out("fGas") OutWrapper<Double> fGas,
-					@Out("fBrake") OutWrapper<Double> fBrake,
-					
-					@InOut("fLPosMin") OutWrapper<Double> fLPosMin,
-					@InOut("fLSpeedMin") OutWrapper<Double> fLSpeedMin,
-					@InOut("fLPosMax") OutWrapper<Double> fLPosMax,
-					@InOut("fLSpeedMax") OutWrapper<Double> fLSpeedMax,
-					@InOut("fLastTime") OutWrapper<Double> fLastTime,
-					@InOut("fIntegratorError") OutWrapper<Double> fIntegratorError,
-					@InOut("fErrorWindup") OutWrapper<Double> fErrorWindup
-				) {
+				@In("fPos") Double fPos,
+				@In("fSpeed") Double fSpeed,
+				@In("fLTargetPos") Double fLTargetPos,
+				@In("fLTargetSpeed") Double fLTargetSpeed,
+				
+				@Out("fGas") OutWrapper<Double> fGas,
+				@Out("fBrake") OutWrapper<Double> fBrake,
+				
+				@InOut("fIntegratorError") OutWrapper<Double> fIntegratorError,
+				@InOut("fErrorWindup") OutWrapper<Double> fErrorWindup
+			) {
 	
-			double currentTime = System.nanoTime()/secNanoSecFactor;
 			double timePeriodInSeconds = timePeriod/miliSecondToSecond;
-			
-			
-			
-			
-//			HashMap<String, Double> boundaries = new HashMap<String, Double>();
-//			
-//			if( lCreationTime < fLastTime.value ){
-//				lTimePeriod = fLastTime.value > 0.0 ? currentTime - fLastTime.value : 0.0;
-//				boundaries = calculateBoundaries(lSpeedMin.value, lSpeedMax.value, lPosMin.value, lPosMax.value, ACCDatabase.lTorques, lTimePeriod);
-//				lPosMin.value += boundaries.get("xMin");
-//				lPosMax.value += boundaries.get("xMax");
-//				lSpeedMin.value += boundaries.get("dxMin");
-//				lSpeedMax.value += boundaries.get("dxMax");
-//				System.out.println("////... pos: min "+lPosMin.value+" ... max "+lPosMax.value + "     time :"+currentTime);
-//				System.out.println("////... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
-//			}else { 
-//				lTimePeriod = lCreationTime > 0.0 ? currentTime - lCreationTime : 0.0;
-//				boundaries = calculateBoundaries(currentLSpeed, currentLSpeed, currentLPos, currentLPos, ACCDatabase.lTorques, lTimePeriod);
-//				lPosMin.value = currentLPos + boundaries.get("xMin");
-//				lPosMax.value = currentLPos + boundaries.get("xMax");
-//				lSpeedMin.value = currentLSpeed + boundaries.get("dxMin");
-//				lSpeedMax.value = currentLSpeed + boundaries.get("dxMax");
-//				System.out.println("\\\\... pos: min "+lPosMin.value+" ... max "+lPosMax.value+"      time :"+currentTime);
-//				System.out.println("\\\\... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
-//			}
+			double distanceError = - wantedDistance + fLTargetPos - fPos;
+			double pidDistance = kpD * distanceError;
+			double error = pidDistance + fLTargetSpeed - fSpeed;
+			fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriodInSeconds;
+			double pidSpeed = kp * error + fIntegratorError.value;
+			fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
 
-			
-			
-			double[] minBoundaries = new double[1]; 
-			double[] maxBoundaries = new double[1];
-			double startTime = 0.0;
-			
-			
-
-			if( fLastTime.value != 0.0 && fLCreationTime <= fLastTime.value  ){
-				startTime = fLastTime.value;
+			if(pidSpeed >= 0){
+				fGas.value = pidSpeed;
+				fBrake.value = 0.0;
 			}else{
-				startTime = fLCreationTime;
-				fLPosMin.value = fLPos;
-				fLPosMax.value = fLPos;
-				fLSpeedMin.value = fLSpeed;
-				fLSpeedMax.value = fLSpeed;
-				System.out.println("@@@@@@... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
-				System.out.println("@@@@@@... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+				fGas.value = 0.0;
+				fBrake.value = -pidSpeed;
 			}
-			
-			//------------------------------------------------ knowledge evaluation ------------------------------------------
-			
-			try{
-				
-				double accMin = ACCDatabase.getAcceleration(fLSpeedMin.value, fLPosMin.value, ACCDatabase.lTorques, 0.0, 1.0, ACCDatabase.lMass);
-				double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
-				
-				FirstOrderIntegrator integrator = new MidpointIntegrator(1);
-				integrator.setMaxEvaluations((int) timePeriod);
-				FirstOrderDifferentialEquations f = new Derivation(); // why I should put if F^min and F^max
-				//------------- min ----------------------
-	
-				minBoundaries[0] = accMin;
-				integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
-				fLSpeedMin.value += minBoundaries[0];
-				integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
-				fLPosMin.value += minBoundaries[0];
-				//------------- max ----------------------
-				
-				maxBoundaries[0] = accMax;
-				integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
-				fLSpeedMax.value += maxBoundaries[0];
-				integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
-				fLPosMax.value += maxBoundaries[0];
-				
-				
-				System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
-				System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
-			
-			} catch ( Exception e ){
-				System.err.println("error : "+e.getMessage());//the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
-			}
-			
-			//-------------------------------------------------------safety part----------------------------------------------------------
-			
-			
-			
-			//----------------------------------------------------- controller part -------------------------------------------------------
-				
-				double distanceError = - wantedDistance + (fLPos - fPos);
-				double pidDistance = kpD * distanceError;
-				double error = pidDistance + fLSpeed - fSpeed;
-				fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriodInSeconds;
-				double pidSpeed = kp * error + fIntegratorError.value;
-				
-				fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
-
-				if(pidSpeed >= 0){
-					fGas.value = pidSpeed;
-					fBrake.value = 0.0;
-				}else{
-					fGas.value = 0.0;
-					fBrake.value = -pidSpeed;
-				}
-
-				fLastTime.value = currentTime;
 	}
 	
 	
+	@Process
+	@PeriodicScheduling((int) timePeriod) // must be triggered
+	public static void useCACC(
+			@In("fLPosMin") Double fLPosMin,
+			@In("fLSpeedMin") Double fLSpeedMin,
+			@In("fInaccuracy")  Double fInaccuracy,//@TriggerOnChange
+
+			@Out("fLTargetPos") OutWrapper<Double> fLTargetPos,
+			@Out("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
+            ){
+		if ( fInaccuracy <= THRESHOLD){
+			fLTargetPos.value = fLPosMin;
+			fLTargetSpeed.value =  fLSpeedMin;
+		}
+	}
+	
+	@Process
+	@PeriodicScheduling((int) timePeriod) // must be triggered
+	public static void useACC(
+			@In("fPos") Double fPos,
+			@In("fLPos") Double fLPos,
+			@In("fLSpeed") Double fLSpeed,
+			@In("fHeadwayDistance") Double fHeadwayDistance,
+			@In("fInaccuracy")  Double fInaccuracy, //@TriggerOnChange 
+
+			@Out("fLTargetPos") OutWrapper<Double> fLTargetPos,
+			@Out("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
+	){
+		if ( fInaccuracy > THRESHOLD ){
+			if( (fLPos - fPos) <= fHeadwayDistance ){
+				fLTargetPos.value = fLPos;
+				fLTargetSpeed.value = fLSpeed;
+			}else{
+				fLTargetPos.value = fPos + fHeadwayDistance;
+				fLTargetSpeed.value =  ACCDatabase.getValue(ACCDatabase.positionSeries, ACCDatabase.driverSpeed, fPos);
+			}
+		}
+	}
+	
+	
+	@Process
+	@PeriodicScheduling((int) timePeriod)
+	public static void computeBeliefBoundaries(
+			@In("fLPos") Double fLPos,
+			@In("fLSpeed") Double fLSpeed,
+			@In("fLTargetPos")  Double fLTargetPos,		      
+			@In("fLCreationTime") Double fLCreationTime,
+			
+			@Out("fInaccuracy") OutWrapper<Double> fInaccuracy,
+
+			@InOut("fLPosMin") OutWrapper<Double> fLPosMin,
+			@InOut("fLSpeedMin") OutWrapper<Double> fLSpeedMin,
+			@InOut("fLPosMax") OutWrapper<Double> fLPosMax,
+			@InOut("fLSpeedMax") OutWrapper<Double> fLSpeedMax,
+			@InOut("fLastTime") OutWrapper<Double> fLastTime
+			){
+		
+		double currentTime = System.nanoTime()/secNanoSecFactor;
+		double[] minBoundaries = new double[1]; 
+		double[] maxBoundaries = new double[1];
+		double startTime = 0.0;
+		
+		if( fLCreationTime <= fLastTime.value ){
+			startTime = fLastTime.value;
+		}else{
+			startTime = fLCreationTime;
+			fLPosMin.value = fLPos;
+			fLPosMax.value = fLPos;
+			fLSpeedMin.value = fLSpeed;
+			fLSpeedMax.value = fLSpeed;
+		}
+		
+		//------------------------------------------------ knowledge evaluation ------------------------------------------
+		try{
+			
+			double accMin = ACCDatabase.getAcceleration(fLSpeedMin.value, fLPosMin.value, ACCDatabase.lTorques, 0.0, 1.0, ACCDatabase.lMass);
+			double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
+			
+			FirstOrderIntegrator integrator = new MidpointIntegrator(1);
+			integrator.setMaxEvaluations((int) timePeriod);
+			FirstOrderDifferentialEquations f = new Derivation(); // why I should put if F^min and F^max
+			//------------- min ----------------------
+
+			minBoundaries[0] = accMin;
+			integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
+			fLSpeedMin.value += minBoundaries[0];
+			integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
+			fLPosMin.value += minBoundaries[0];
+			//------------- max ----------------------
+			
+			maxBoundaries[0] = accMax;
+			integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
+			fLSpeedMax.value += maxBoundaries[0];
+			integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
+			fLPosMax.value += maxBoundaries[0];
+
+			
+			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
+			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+		
+		} catch ( Exception e ){
+			System.err.println("error : "+e.getMessage());//the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
+		}
+		
+		if( fLTargetPos == 0.0 )
+			fInaccuracy.value = 50.0;
+		else
+			fInaccuracy.value = fLPos - fLPosMin.value;
+		fLastTime.value = currentTime;
+	}
+
+	
+
 	private static double saturate(double val) {
 		if(val > 1) val = 1;
 		else if(val < -1) val = -1;
 		return val;
 	}
 	
-
-	@Process
-	@PeriodicScheduling((int) timePeriod)
-	public static void computeAccelerationCACC(
-			@In("fPos") Double fPos,
-			@In("fLPos") Double fLPos,
-			@In("fHeadwayDistance") @TriggerOnChange Double fHeadwayDistance, // it should not depend on that, because it may be will be out range of radar????? why I would put this field
-			@Out("fTargetAcc") OutWrapper<Double> fTargetAcc
-            ){
-		
-		if ( inaccuracy(distance(fLPos, fPos)) <= THRESHOLD){
-		
-		}
-	}
 	
-	
-	@Process
-	@PeriodicScheduling((int) timePeriod)
-	public static void computeAccelerationACC(
-			@In("fPos") Double fPos,
-			@In("fLPos") Double fLPos,
-			@In("fHeadwayDistance") @TriggerOnChange Double fHeadwayDistance, // the same .....
-			@Out("fTargetAcc") OutWrapper<Double> fTargetAcc
-	){
-		if ( inaccuracy(distance(fLPos, fPos)) > THRESHOLD){
-		
-		}
-	}
-
-	private static double inaccuracy(double distance){
-		
-		return 0;
-			
-	}
-
-	private static double distance(double x, double y){
-		return x - y;
-	}
-
-	public static class Derivation implements FirstOrderDifferentialEquations{
+	private static class Derivation implements FirstOrderDifferentialEquations{
 
 		@Override
 		public int getDimension() {
