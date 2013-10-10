@@ -11,7 +11,7 @@ import cz.cuni.mff.d3s.deeco.knowledge.OutWrapper;
 
 
 
-public class FollowerEnvEnsembleACC extends Ensemble {
+public class FollowerEnvEnsemble extends Ensemble {
 
 	@Membership
 	public static boolean membership(

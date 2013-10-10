@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 
@@ -111,8 +112,9 @@ public class ACCDatabase {
 	public static Double getValue(ArrayList<Double> x, ArrayList<Double> y, Double key){
 		double a[] = ArrayUtils.toPrimitive(x.toArray(new Double[x.size()]));
 		double b[] = ArrayUtils.toPrimitive(y.toArray(new Double[y.size()]));
-		UnivariateInterpolator interpolator = new SplineInterpolator();
+		UnivariateInterpolator interpolator = new LinearInterpolator();//Spline interpolation
 		UnivariateFunction function = interpolator.interpolate(a,b);
+		if(key < 0.0) return 0.0;
 		double value = function.value(key);
 		return value;
 	}

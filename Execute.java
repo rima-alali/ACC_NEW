@@ -22,9 +22,9 @@ public class Execute {
 		});
 		
 		List<Class<?>> ensembles = Arrays.asList(new Class<?>[] {
-		LeaderEnvEnsembleACC.class,
-		FollowerEnvEnsembleACC.class,
-		FollowerLeaderEnsembleACC.class
+		LeaderEnvEnsemble.class,
+		FollowerEnvEnsemble.class,
+		FollowerLeaderEnsemble.class
 		});
 		
 		KnowledgeManager km = new RepositoryKnowledgeManager(new LocalKnowledgeRepository());

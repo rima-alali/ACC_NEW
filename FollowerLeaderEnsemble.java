@@ -10,7 +10,7 @@ import cz.cuni.mff.d3s.deeco.knowledge.OutWrapper;
 
 
 
-public class FollowerLeaderEnsembleACC extends Ensemble {
+public class FollowerLeaderEnsemble extends Ensemble {
 
 	@Membership
 	public static boolean membership(

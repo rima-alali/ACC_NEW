@@ -2,6 +2,7 @@ package ACC;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
 import org.apache.commons.math3.exception.DimensionMismatchException;
@@ -9,6 +10,7 @@ import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.nonstiff.MidpointIntegrator;
+
 
 import cz.cuni.mff.d3s.deeco.annotations.In;
 import cz.cuni.mff.d3s.deeco.annotations.InOut;
@@ -28,11 +30,11 @@ public class Follower extends Component {
 	public Double fBrake = 0.0;
 	public Double fLastTime = 0.0;
 	
-	public Double fLPos = 60.0;       
+	public Double fLPos = 0.0;       
 	public Double fLSpeed = 0.0;  
-	public Double fLPosMin = 60.0;       
+	public Double fLPosMin = 0.0;       
 	public Double fLSpeedMin = 0.0;     
-	public Double fLPosMax = 60.0;       
+	public Double fLPosMax = 0.0;       
 	public Double fLSpeedMax = 0.0;     
 	public Double fLCreationTime = 0.0;	  
 	
@@ -83,14 +85,41 @@ public class Follower extends Component {
 	
 			double currentTime = System.nanoTime()/secNanoSecFactor;
 			double timePeriodInSeconds = timePeriod/miliSecondToSecond;
-			double[] minBoundaries = new double[2]; //change to something more dynamic
-			double[] maxBoundaries = new double[2];
-			double[] minBoundariesEst = new double[2];
-			double[] maxBoundariesEst = new double[2];
+			
+			
+			
+			
+//			HashMap<String, Double> boundaries = new HashMap<String, Double>();
+//			
+//			if( lCreationTime < fLastTime.value ){
+//				lTimePeriod = fLastTime.value > 0.0 ? currentTime - fLastTime.value : 0.0;
+//				boundaries = calculateBoundaries(lSpeedMin.value, lSpeedMax.value, lPosMin.value, lPosMax.value, ACCDatabase.lTorques, lTimePeriod);
+//				lPosMin.value += boundaries.get("xMin");
+//				lPosMax.value += boundaries.get("xMax");
+//				lSpeedMin.value += boundaries.get("dxMin");
+//				lSpeedMax.value += boundaries.get("dxMax");
+//				System.out.println("////... pos: min "+lPosMin.value+" ... max "+lPosMax.value + "     time :"+currentTime);
+//				System.out.println("////... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
+//			}else { 
+//				lTimePeriod = lCreationTime > 0.0 ? currentTime - lCreationTime : 0.0;
+//				boundaries = calculateBoundaries(currentLSpeed, currentLSpeed, currentLPos, currentLPos, ACCDatabase.lTorques, lTimePeriod);
+//				lPosMin.value = currentLPos + boundaries.get("xMin");
+//				lPosMax.value = currentLPos + boundaries.get("xMax");
+//				lSpeedMin.value = currentLSpeed + boundaries.get("dxMin");
+//				lSpeedMax.value = currentLSpeed + boundaries.get("dxMax");
+//				System.out.println("\\\\... pos: min "+lPosMin.value+" ... max "+lPosMax.value+"      time :"+currentTime);
+//				System.out.println("\\\\... speed: min "+lSpeedMin.value+" ... max "+lSpeedMax.value);
+//			}
+
+			
+			
+			double[] minBoundaries = new double[1]; 
+			double[] maxBoundaries = new double[1];
 			double startTime = 0.0;
 			
 			
-			if( fLCreationTime <= fLastTime.value  ){
+
+			if( fLastTime.value != 0.0 && fLCreationTime <= fLastTime.value  ){
 				startTime = fLastTime.value;
 			}else{
 				startTime = fLCreationTime;
@@ -98,36 +127,42 @@ public class Follower extends Component {
 				fLPosMax.value = fLPos;
 				fLSpeedMin.value = fLSpeed;
 				fLSpeedMax.value = fLSpeed;
+				System.out.println("@@@@@@... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
+				System.out.println("@@@@@@... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
 			}
-			System.out.println("creation : "+fLCreationTime+" , flast "+fLastTime.value+" ,  starttime : "+startTime);
-
-			
 			
 			//------------------------------------------------ knowledge evaluation ------------------------------------------
-			double accMin = ACCDatabase.getAcceleration(fLSpeedMin.value, fLPosMin.value, ACCDatabase.lTorques, 0.0, 1.0, ACCDatabase.lMass);
-			double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
 			
-			FirstOrderIntegrator integrator = new MidpointIntegrator(timePeriodInSeconds);
-			//------------- min ----------------------
+			try{
+				
+				double accMin = ACCDatabase.getAcceleration(fLSpeedMin.value, fLPosMin.value, ACCDatabase.lTorques, 0.0, 1.0, ACCDatabase.lMass);
+				double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
+				
+				FirstOrderIntegrator integrator = new MidpointIntegrator(1);
+				integrator.setMaxEvaluations((int) timePeriod);
+				FirstOrderDifferentialEquations f = new Derivation(); // why I should put if F^min and F^max
+				//------------- min ----------------------
+	
+				minBoundaries[0] = accMin;
+				integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
+				fLSpeedMin.value += minBoundaries[0];
+				integrator.integrate(f, startTime, minBoundaries, currentTime, minBoundaries);
+				fLPosMin.value += minBoundaries[0];
+				//------------- max ----------------------
+				
+				maxBoundaries[0] = accMax;
+				integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
+				fLSpeedMax.value += maxBoundaries[0];
+				integrator.integrate(f, startTime, maxBoundaries, currentTime, maxBoundaries);
+				fLPosMax.value += maxBoundaries[0];
+				
+				
+				System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
+				System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
 			
-			minBoundaries[0] = fLSpeedMin.value;
-			minBoundaries[1] = accMin;
-			FirstOrderDifferentialEquations minF = new Derivation();
-			integrator.integrate(minF, startTime/miliSecondToSecond, minBoundaries, currentTime/miliSecondToSecond, minBoundariesEst);
-			fLPosMin.value = minBoundariesEst[0];
-			fLSpeedMin.value = minBoundariesEst[1];
-			//------------- max ----------------------
-			
-			maxBoundaries[0] = fLSpeedMax.value;
-			maxBoundaries[1] = accMax;
-			FirstOrderDifferentialEquations maxF = new Derivation();
-			integrator.integrate(maxF, startTime/miliSecondToSecond, maxBoundaries, currentTime/miliSecondToSecond, maxBoundariesEst);
-			fLPosMax.value = maxBoundariesEst[0];
-			fLSpeedMax.value = maxBoundariesEst[1];
-			
-			
-			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+maxBoundariesEst[0]+"      time :"+currentTime);
-			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+maxBoundariesEst[1]);
+			} catch ( Exception e ){
+				System.err.println("error : "+e.getMessage());//the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
+			}
 			
 			//-------------------------------------------------------safety part----------------------------------------------------------
 			
@@ -135,12 +170,12 @@ public class Follower extends Component {
 			
 			//----------------------------------------------------- controller part -------------------------------------------------------
 				
-//				double measuredDistance ; // =  ......
 				double distanceError = - wantedDistance + (fLPos - fPos);
 				double pidDistance = kpD * distanceError;
 				double error = pidDistance + fLSpeed - fSpeed;
 				fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriodInSeconds;
 				double pidSpeed = kp * error + fIntegratorError.value;
+				
 				fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
 
 				if(pidSpeed >= 0){
@@ -200,31 +235,23 @@ public class Follower extends Component {
 		return x - y;
 	}
 
-	private static class Derivation implements FirstOrderDifferentialEquations{
+	public static class Derivation implements FirstOrderDifferentialEquations{
 
 		@Override
 		public int getDimension() {
 			// TODO Auto-generated method stub
-			return 2;
+			return 1;
 		}
 
 		@Override
 		public void computeDerivatives(double t, double[] y, double[] yDot)
 				throws MaxCountExceededException, DimensionMismatchException {
 			// TODO Auto-generated method stub
-			int params = 2;
+			int params = 1;
 			int order = 1;
-			DerivativeStructure time = new DerivativeStructure(params, order, 0, t);
-			for (int i = 0; i < yDot.length; i++) {
-				DerivativeStructure state = new DerivativeStructure(params, order, 1, y[i]);
-				DerivativeStructure f = state.divide(time);
-				yDot[i] = f.getValue();
-			}
-
+			DerivativeStructure x = new DerivativeStructure(params, order, 0, y[0]);
+			DerivativeStructure f = x.divide(t);
+			yDot[0] = f.getValue();
 		}
-		
 	}
-
-
-
 }
