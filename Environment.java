@@ -25,9 +25,9 @@ public class Environment extends Component {
 	public Double eLastTime = 0.0;
 
 	
-	protected static final double timePeriod = 100;
-	protected static final double secNanoSecFactor = 1000000000;
-	protected static final double miliSecondToSecond = 1000;
+	protected static final double TIMEPERIOD = 100;
+	protected static final double SEC_NANOSECOND_FACTOR = 1000000000;
+	protected static final double SEC_MILISEC_FACTOR = 1000;
 	
 	
 	
@@ -35,7 +35,7 @@ public class Environment extends Component {
 	}	
 	
 	@Process 
-	@PeriodicScheduling((int) timePeriod)
+	@PeriodicScheduling((int) TIMEPERIOD)
 	public static void environmentResponse(
 			@In("eLGas") Double eLGas,
 			@In("eLBrake") Double eLBrake,
@@ -50,8 +50,8 @@ public class Environment extends Component {
 			@Out("eLastTime") OutWrapper<Double> eLastTime
 			){
 	
-		double currentTime = System.nanoTime()/secNanoSecFactor;
-		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
+		double currentTime = System.nanoTime()/SEC_NANOSECOND_FACTOR;
+		double timePeriodInSeconds = TIMEPERIOD/SEC_MILISEC_FACTOR;
 		
 		// ----------------------- leader ----------------------------------------------------------------------
 		double lAcceleration = ACCDatabase.getAcceleration(eLSpeed.value, eLPos.value, ACCDatabase.lTorques, eLGas, eLBrake, ACCDatabase.lMass);

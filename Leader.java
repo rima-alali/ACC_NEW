@@ -22,11 +22,11 @@ public class Leader extends Component {
 	public Double lIntegratorSpeedError = 0.0;
 	public Double lErrorWindup = 0.0;
 	
-	protected static final double kp = 0.05;
-	protected static final double ki = 0.000228325;
-	protected static final double kt = 0.01;
-	protected static final double timePeriod = 100;
-	protected static final double miliSecondToSecond = 1000;
+	protected static final double KP = 0.05;
+	protected static final double KI = 0.000228325;
+	protected static final double KT = 0.01;
+	protected static final double TIMEPERIOD = 100;
+	protected static final double SEC_MILI_SEC_FACTOR = 1000;
 	
 	
 	public Leader() {
@@ -35,7 +35,7 @@ public class Leader extends Component {
 	
 	
 	@Process
-	@PeriodicScheduling((int) timePeriod)
+	@PeriodicScheduling((int) TIMEPERIOD)
 	public static void speedControl(
 			@In("lPos") Double lPos,
 			@In("lSpeed") Double lSpeed,
@@ -47,10 +47,10 @@ public class Leader extends Component {
 			@InOut("lErrorWindup") OutWrapper<Double> lErrorWindup	
 			) {
 	
-		double timePeriodInSeconds = timePeriod/miliSecondToSecond;
+		double timePeriodInSeconds = TIMEPERIOD/SEC_MILI_SEC_FACTOR;
 		double speedError = ACCDatabase.getValue(ACCDatabase.positionSeries, ACCDatabase.driverSpeed, lPos) - lSpeed;
-		lIntegratorSpeedError.value += (ki * speedError + kt * lErrorWindup.value) * timePeriodInSeconds;
-		double pid = kp * speedError + lIntegratorSpeedError.value;
+		lIntegratorSpeedError.value += (KI * speedError + KT * lErrorWindup.value) * timePeriodInSeconds;
+		double pid = KP * speedError + lIntegratorSpeedError.value;
 		lErrorWindup.value = saturate(pid) - pid;
 
 		if(pid >= 0){

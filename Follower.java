@@ -45,14 +45,15 @@ public class Follower extends Component {
 	public Double fErrorWindup = 0.0;
 	
 	
-	protected static final double kpD = 0.193;
-	protected static final double kp = 0.12631;
-	protected static final double ki = 0.001;
-	protected static final double kt = 0.01;
-	protected static final double secNanoSecFactor = 1000000000;
-	protected static final double timePeriod = 100;
-	protected static final double miliSecondToSecond = 1000;
-	protected static final double wantedDistance = 50;
+	protected static final double KP_D = 0.193;
+	protected static final double KP_S = 0.12631;
+	protected static final double KI_S = 0.001;
+	protected static final double KT_S = 0.01;
+	protected static final double SEC_NANOSEC_FACTOR = 1000000000;
+	protected static final double TIMEPERIOD = 100;
+	protected static final double SEC_MILISEC_FACTOR = 1000;
+	protected static final double DESIRED_DISTANCE = 50;
+	protected static final double DESIRED_SPEED = 90;
 	protected static final double THRESHOLD = 15;
 
     
@@ -63,7 +64,7 @@ public class Follower extends Component {
 	
 	
 	@Process
-	@PeriodicScheduling((int) timePeriod)
+	@PeriodicScheduling((int) TIMEPERIOD)
 	public static void speedControl(
 				@In("fPos") Double fPos,
 				@In("fSpeed") Double fSpeed,
@@ -78,12 +79,12 @@ public class Follower extends Component {
 				@InOut("fErrorWindup") OutWrapper<Double> fErrorWindup
 			) {
 	
-			double timePeriodInSeconds = timePeriod/miliSecondToSecond;
-			double distanceError = - wantedDistance + fLTargetPos - fPos;
-			double pidDistance = kpD * distanceError;
+			double timePeriodInSeconds = TIMEPERIOD/SEC_MILISEC_FACTOR;
+			double distanceError = - DESIRED_DISTANCE + fLTargetPos - fPos;
+			double pidDistance = KP_D * distanceError;
 			double error = pidDistance + fLTargetSpeed - fSpeed;
-			fIntegratorError.value += (ki * error + kt * fErrorWindup.value) * timePeriodInSeconds;
-			double pidSpeed = kp * error + fIntegratorError.value;
+			fIntegratorError.value += (KI_S * error + KT_S * fErrorWindup.value) * timePeriodInSeconds;
+			double pidSpeed = KP_S * error + fIntegratorError.value;
 			fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
 
 			if( fInaccuracy == -1.0){
@@ -103,20 +104,19 @@ public class Follower extends Component {
 	
 	
 	@Process
-	@PeriodicScheduling((int) timePeriod) // must be triggered
+	@PeriodicScheduling((int) TIMEPERIOD)
 	public static void computeTarget(
 			@In("fPos") Double fPos,
 			@In("fLPos") Double fLPos,
 			@In("fLSpeed") Double fLSpeed,
 			@In("fLPosMin") Double fLPosMin,
 			@In("fLSpeedMin") Double fLSpeedMin,
-			@In("fInaccuracy")  Double fInaccuracy,//@TriggerOnChange
+			@In("fInaccuracy") Double fInaccuracy,
 			@In("fHeadwayDistance") Double fHeadwayDistance,
 
-			@InOut("fLTargetPos") OutWrapper<Double> fLTargetPos, // InOut to not have null if we did not enter if condition
+			@InOut("fLTargetPos") OutWrapper<Double> fLTargetPos, // InOut : to not have null if we did not enter if condition
 			@InOut("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
             ){
-		
 		if ( fInaccuracy <= THRESHOLD){
 			computeTargetByCACC();
 			fLTargetPos.value = fLPos;
@@ -128,7 +128,7 @@ public class Follower extends Component {
 				fLTargetSpeed.value =  fLSpeed;
 			}else{
 				fLTargetPos.value = fPos + fHeadwayDistance;
-				fLTargetSpeed.value =  ACCDatabase.getValue(ACCDatabase.positionSeries, ACCDatabase.driverSpeed, fPos);
+				fLTargetSpeed.value =  DESIRED_SPEED;
 				System.out.println("ACC   _____   no leader.");
 			}
 		}
@@ -137,24 +137,24 @@ public class Follower extends Component {
 	
 	
 	private static void computeTargetByCACC(){
-		System.out.println("CACC ____ take the pos and the speed from wirless connection.");
+		System.out.println("CACC ____ takes the pos and the speed from wirless connection.");
  	}
 	
 	
 	private static void computeTargetByACC(){
-		System.out.println("ACC   _____  take the pos and the speed from the headway sensors.");
+		System.out.println("ACC   _____  takes the pos and the speed from the headway sensors.");
 	}
 	
 	
 	@Process
-	@PeriodicScheduling((int) timePeriod)
+	@PeriodicScheduling((int) TIMEPERIOD)
 	public static void computeBeliefBoundaries(
 			@In("fLPos") Double fLPos,
 			@In("fLSpeed") Double fLSpeed,
 			@In("fLTargetPos")  Double fLTargetPos,		      
 			@In("fLCreationTime") Double fLCreationTime,
 			
-			@Out("fInaccuracy") OutWrapper<Double> fInaccuracy,
+			@InOut("fInaccuracy") OutWrapper<Double> fInaccuracy,
 
 			@InOut("fLPosMin") OutWrapper<Double> fLPosMin,
 			@InOut("fLSpeedMin") OutWrapper<Double> fLSpeedMin,
@@ -163,7 +163,7 @@ public class Follower extends Component {
 			@InOut("fLastTime") OutWrapper<Double> fLastTime
 			){
 		
-		double currentTime = System.nanoTime()/secNanoSecFactor;
+		double currentTime = System.nanoTime()/SEC_NANOSEC_FACTOR;
 		double[] minBoundaries = new double[1]; 
 		double[] maxBoundaries = new double[1];
 		double startTime = 0.0;
@@ -185,7 +185,7 @@ public class Follower extends Component {
 			double accMax = ACCDatabase.getAcceleration(fLSpeedMax.value, fLPosMax.value, ACCDatabase.lTorques, 1.0, 0.0, ACCDatabase.lMass);
 			
 			FirstOrderIntegrator integrator = new MidpointIntegrator(1);
-			integrator.setMaxEvaluations((int) timePeriod);
+			integrator.setMaxEvaluations((int) TIMEPERIOD);
 			FirstOrderDifferentialEquations f = new Derivation(); // why I should put if F^min and F^max
 			//------------- min ----------------------
 
@@ -203,8 +203,8 @@ public class Follower extends Component {
 			fLPosMax.value += maxBoundaries[0];
 
 			
-			System.out.println("///... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
-			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
+			System.out.println("//... pos: min "+fLPosMin.value+" ... max "+fLPosMax.value+"      time :"+currentTime);
+			System.out.println("//... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
 		
 		} catch ( Exception e ){
 			System.err.println("error : "+e.getMessage()); //the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
@@ -214,6 +214,7 @@ public class Follower extends Component {
 			fInaccuracy.value = -1.0;
 		else
 			fInaccuracy.value = fLPos - fLPosMin.value; // do I put the inaccuracy for both min/max, fInaccuracy = Math.max( fLPos - fLPosMin.value , fLPosMax.value - fLPos ); or only what I care about which is the min boundary?
+
 		fLastTime.value = currentTime;
 	}
 
