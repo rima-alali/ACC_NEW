@@ -1,6 +1,8 @@
 package ACC;
 
 
+import java.util.ArrayList;
+
 import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
@@ -37,7 +39,7 @@ public class Follower extends Component {
 	public Double fLTargetPos = 0.0;       
 	public Double fLTargetSpeed = 0.0;  
 
-	public Double fInaccuracy = 0.0;
+	public Double fInaccuracy = -1.0;
 	public Double fHeadwayDistance = 100.0;
 	public Double fIntegratorError = 0.0;
 	public Double fErrorWindup = 0.0;
@@ -51,13 +53,14 @@ public class Follower extends Component {
 	protected static final double timePeriod = 100;
 	protected static final double miliSecondToSecond = 1000;
 	protected static final double wantedDistance = 50;
-	protected static final double THRESHOLD = 40;
+	protected static final double THRESHOLD = 15;
 
     
 	
 	public Follower() {
 		name = "F";
 	}
+	
 	
 	@Process
 	@PeriodicScheduling((int) timePeriod)
@@ -66,6 +69,7 @@ public class Follower extends Component {
 				@In("fSpeed") Double fSpeed,
 				@In("fLTargetPos") Double fLTargetPos,
 				@In("fLTargetSpeed") Double fLTargetSpeed,
+				@In("fInaccuracy") Double fInaccuracy,
 				
 				@Out("fGas") OutWrapper<Double> fGas,
 				@Out("fBrake") OutWrapper<Double> fBrake,
@@ -82,53 +86,63 @@ public class Follower extends Component {
 			double pidSpeed = kp * error + fIntegratorError.value;
 			fErrorWindup.value = saturate(pidSpeed) - pidSpeed;
 
-			if(pidSpeed >= 0){
-				fGas.value = pidSpeed;
+			if( fInaccuracy == -1.0){
+				fGas.value = 0.0;
 				fBrake.value = 0.0;
 			}else{
-				fGas.value = 0.0;
-				fBrake.value = -pidSpeed;
+				if(pidSpeed >= 0){
+				fGas.value = pidSpeed;
+				fBrake.value = 0.0;
+				}else{
+					fGas.value = 0.0;
+					fBrake.value = -pidSpeed;
+				}
 			}
 	}
 	
 	
-	@Process
-	@PeriodicScheduling((int) timePeriod) // must be triggered
-	public static void useCACC(
-			@In("fLPosMin") Double fLPosMin,
-			@In("fLSpeedMin") Double fLSpeedMin,
-			@In("fInaccuracy")  Double fInaccuracy,//@TriggerOnChange
-
-			@Out("fLTargetPos") OutWrapper<Double> fLTargetPos,
-			@Out("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
-            ){
-		if ( fInaccuracy <= THRESHOLD){
-			fLTargetPos.value = fLPosMin;
-			fLTargetSpeed.value =  fLSpeedMin;
-		}
-	}
 	
 	@Process
 	@PeriodicScheduling((int) timePeriod) // must be triggered
-	public static void useACC(
+	public static void computeTarget(
 			@In("fPos") Double fPos,
 			@In("fLPos") Double fLPos,
 			@In("fLSpeed") Double fLSpeed,
+			@In("fLPosMin") Double fLPosMin,
+			@In("fLSpeedMin") Double fLSpeedMin,
+			@In("fInaccuracy")  Double fInaccuracy,//@TriggerOnChange
 			@In("fHeadwayDistance") Double fHeadwayDistance,
-			@In("fInaccuracy")  Double fInaccuracy, //@TriggerOnChange 
 
-			@Out("fLTargetPos") OutWrapper<Double> fLTargetPos,
-			@Out("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
-	){
-		if ( fInaccuracy > THRESHOLD ){
+			@InOut("fLTargetPos") OutWrapper<Double> fLTargetPos, // InOut to not have null if we did not enter if condition
+			@InOut("fLTargetSpeed") OutWrapper<Double> fLTargetSpeed
+            ){
+		
+		if ( fInaccuracy <= THRESHOLD){
+			computeTargetByCACC();
+			fLTargetPos.value = fLPos;
+			fLTargetSpeed.value =  fLSpeed;
+		} else {
 			if( (fLPos - fPos) <= fHeadwayDistance ){
+				computeTargetByACC();
 				fLTargetPos.value = fLPos;
-				fLTargetSpeed.value = fLSpeed;
+				fLTargetSpeed.value =  fLSpeed;
 			}else{
 				fLTargetPos.value = fPos + fHeadwayDistance;
 				fLTargetSpeed.value =  ACCDatabase.getValue(ACCDatabase.positionSeries, ACCDatabase.driverSpeed, fPos);
+				System.out.println("ACC   _____   no leader.");
 			}
 		}
+ 	}
+	
+	
+	
+	private static void computeTargetByCACC(){
+		System.out.println("CACC ____ take the pos and the speed from wirless connection.");
+ 	}
+	
+	
+	private static void computeTargetByACC(){
+		System.out.println("ACC   _____  take the pos and the speed from the headway sensors.");
 	}
 	
 	
@@ -193,18 +207,17 @@ public class Follower extends Component {
 			System.out.println("///... speed: min "+fLSpeedMin.value+" ... max "+fLSpeedMax.value);
 		
 		} catch ( Exception e ){
-			System.err.println("error : "+e.getMessage());//the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
+			System.err.println("error : "+e.getMessage()); //the error at the first of the execution because of the fLastTime is zero => the integration range is so big   
 		}
 		
 		if( fLTargetPos == 0.0 )
-			fInaccuracy.value = 50.0;
+			fInaccuracy.value = -1.0;
 		else
-			fInaccuracy.value = fLPos - fLPosMin.value;
+			fInaccuracy.value = fLPos - fLPosMin.value; // do I put the inaccuracy for both min/max, fInaccuracy = Math.max( fLPos - fLPosMin.value , fLPosMax.value - fLPos ); or only what I care about which is the min boundary?
 		fLastTime.value = currentTime;
 	}
 
 	
-
 	private static double saturate(double val) {
 		if(val > 1) val = 1;
 		else if(val < -1) val = -1;
